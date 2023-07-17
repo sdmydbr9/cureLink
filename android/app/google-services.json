@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "345802264552",
+    "project_id": "medical-portal-b8a02",
+    "storage_bucket": "medical-portal-b8a02.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:345802264552:android:2322dbe49a60ca1c029e5d",
+        "android_client_info": {
+          "package_name": "com.example.medical_portal"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "345802264552-6gml6qvihslgvqiiub1skumd0supmflb.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBr8Jizgy1nl0quXX_YhdANoT-bR9-3GuI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "345802264552-6gml6qvihslgvqiiub1skumd0supmflb.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
