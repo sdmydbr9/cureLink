@@ -1,1 +1,1 @@
-application for data entry into database using 2FA and firebase login method
+started with the idea of building a better diagnosis in the field of veterinary by leveraging the blooming LLM and machine learning. This is stage 1 and has a long way to go. This app is for data entry and data input for vectorisation and further preprocessing which will ultimately be used in the Grand projet. Feel free to reach out for more questions. 
