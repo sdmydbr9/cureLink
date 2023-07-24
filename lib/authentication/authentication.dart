@@ -7,8 +7,10 @@ class Authentication {
   Future<bool> login(
       BuildContext context, String usernameEmail, String password) async {
     if (isEmail(usernameEmail)) {
+      print('Logging in using Firebase...');
       return await loginWithEmail(context, usernameEmail, password);
     } else {
+      print('Logging in using cURL...');
       return await loginWithCurl(context, usernameEmail, password);
     }
   }

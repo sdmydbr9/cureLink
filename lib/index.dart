@@ -11,186 +11,203 @@ class MedicalPortalApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Medical Portal',
-      theme: ThemeData(
-        primaryColor: Colors.white,
-        accentColor: Colors.black,
-        brightness: Brightness.light,
-      ),
       home: MedicalPortalHomePage(),
     );
   }
 }
 
-class MedicalPortalHomePage extends StatelessWidget {
+class MedicalPortalHomePage extends StatefulWidget {
+  @override
+  _MedicalPortalHomePageState createState() => _MedicalPortalHomePageState();
+}
+
+class _MedicalPortalHomePageState extends State<MedicalPortalHomePage>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  void _showMenu(BuildContext context) {
+    final radius = Radius.circular(8.0);
+    showMenu(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        MediaQuery.of(context).size.width - 50,
+        kToolbarHeight,
+        0,
+        0,
+      ),
+      items: [
+        PopupMenuItem(
+          value: 'admin',
+          child: Row(
+            children: [
+              Icon(CupertinoIcons.gear, size: 20),
+              SizedBox(width: 10),
+              Text('Admin'),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'terms',
+          child: Row(
+            children: [
+              Icon(CupertinoIcons.doc_plaintext, size: 20),
+              SizedBox(width: 10),
+              Text('Terms & Conditions'),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'logout',
+          child: Row(
+            children: [
+              Icon(CupertinoIcons.arrow_uturn_left, size: 20),
+              SizedBox(width: 10),
+              Text('Logout'),
+            ],
+          ),
+        ),
+      ],
+      elevation: 8.0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(radius),
+      ),
+    ).then((value) {
+      if (value == 'admin') {
+        // Add your logic here for the admin menu option
+        // For example, Navigator.pushNamed(context, '/admin_login');
+      } else if (value == 'terms') {
+        // Add your logic here for the terms menu option
+        // For example, _showTermsAndConditionsDialog(context);
+      } else if (value == 'logout') {
+        // Add your logic here for the logout menu option
+        // For example, Navigator.pushNamed(context, '/logout');
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    var pill;
     return Scaffold(
-      drawer: SideMenu(), // Add the SideMenu widget as the drawer
       appBar: AppBar(
-        title: Text('Medical Portal'),
+        title: const Text('Medical Portal'),
         centerTitle: true,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
-        iconTheme: IconThemeData(color: Colors.black),
+        iconTheme: const IconThemeData(color: Colors.black),
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.more_vert),
+            onPressed: () => _showMenu(context),
+          ),
+        ],
       ),
-    );
-  }
-}
-
-class SideMenu extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Drawer(
-      child: Container(
-        color: CupertinoColors.extraLightBackgroundGray,
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            DrawerHeader(
-              child: Text(
-                'CureLink',
-                style: TextStyle(
-                  color: CupertinoColors.black,
-                  fontSize: 24,
-                ),
-              ),
-              decoration: BoxDecoration(
-                color: CupertinoColors.extraLightBackgroundGray,
-              ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          MedicalPortalTab(
+            title: 'Contribute Clinical Notes',
+            icon: CupertinoIcons.book,
+            onTap: () {
+              Navigator.pushNamed(context, '/form');
+            },
+          ),
+          MedicalPortalTab(
+            title: 'Contribute Lab Results',
+            icon: CupertinoIcons.lab_flask,
+            onTap: () {
+              Navigator.pushNamed(context, '/lab_report');
+            },
+          ),
+          MedicalPortalTab(
+            title: 'Contribute Medication',
+            icon: CupertinoIcons.capsule,
+            onTap: () {
+              Navigator.pushNamed(context, '/dosage');
+            },
+          ),
+        ],
+      ),
+      bottomNavigationBar: Padding(
+        padding:
+            const EdgeInsets.only(bottom: 16.0), // Add spacing at the bottom
+        child: CupertinoTabBar(
+          backgroundColor: CupertinoColors.extraLightBackgroundGray,
+          activeColor: Color.fromARGB(255, 0, 64, 221),
+          currentIndex: _tabController.index,
+          onTap: (index) {
+            setState(() {
+              _tabController.index = index;
+            });
+          },
+          items: [
+            const BottomNavigationBarItem(
+              icon: Icon(CupertinoIcons.book),
+              label: 'Clinical Notes',
             ),
-            MenuItem(
-              title: 'Contribute Clinical Notes',
-              route: '/form',
+            const BottomNavigationBarItem(
+              icon: Icon(CupertinoIcons.lab_flask),
+              label: 'Lab Results',
             ),
-            MenuItem(
-              title: 'Contribute Lab Results',
-              route: '/lab_report',
+            const BottomNavigationBarItem(
+              icon: Icon(CupertinoIcons.capsule),
+              label: 'Medication',
             ),
-            MenuItem(
-              title: 'Contribute Medication',
-              route: '/dosage',
-            ),
-            MenuItem(
-              title: 'View Entered Clinical Notes',
-              route: '/form',
-            ),
-            Divider(),
-            ..._buildMenuItems(context),
           ],
         ),
       ),
     );
   }
-
-  List<Widget> _buildMenuItems(BuildContext context) {
-    final menuItems = [
-      MenuItem(
-        title: 'Term & condition',
-        route: '/terms_and_conditions',
-        smallerFont: true,
-      ),
-      MenuItem(
-        title: 'Admin login',
-        route: '/admin_login',
-        smallerFont: true,
-      ),
-      MenuItem(
-        title: 'Logout',
-        route: '/logout',
-        smallerFont: true,
-      ),
-    ];
-
-    // Custom list of widgets with adjusted spacing between menu items
-    final adjustedMenuItems = <Widget>[];
-    for (var i = 0; i < menuItems.length; i++) {
-      adjustedMenuItems.add(menuItems[i]);
-      if (i < menuItems.length - 1) {
-        adjustedMenuItems.add(SizedBox(
-            height: 1)); // Custom vertical padding for spacing adjustment
-      }
-    }
-
-    return adjustedMenuItems;
-  }
 }
 
-class MenuItem extends StatelessWidget {
+class MedicalPortalTab extends StatelessWidget {
   final String title;
-  final String route;
-  final bool
-      smallerFont; // New parameter to indicate if the font size should be smaller
+  final IconData icon;
+  final Function() onTap;
 
-  const MenuItem({
+  MedicalPortalTab({
     required this.title,
-    required this.route,
-    this.smallerFont = false, // Default value for smallerFont is false
+    required this.icon,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      title: Text(
-        title,
-        style: TextStyle(
-          color: CupertinoColors.black,
-          fontSize: smallerFont
-              ? 16
-              : 18, // Use a smaller font size if smallerFont is true
-        ),
-      ),
-      onTap: () {
-        if (route == '/terms_and_conditions') {
-          // Show the terms and conditions in a dialog pop-up
-          _showTermsAndConditionsDialog(context);
-        } else {
-          // Navigate to other screens as needed
-          Navigator.pushNamed(context, route);
-        }
-      },
-    );
-  }
-
-  // Function to show the terms and conditions dialog pop-up
-  void _showTermsAndConditionsDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text('Terms & Conditions'),
-          content: SingleChildScrollView(
-            child: FutureBuilder(
-              future: _loadTermsText(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.done) {
-                  if (snapshot.hasData) {
-                    return Text(
-                      snapshot.data.toString(),
-                      style: TextStyle(fontSize: 16),
-                    );
-                  } else {
-                    return Text('Error loading terms and conditions.');
-                  }
-                } else {
-                  return CircularProgressIndicator();
-                }
-              },
+    return Center(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 60,
+              color: CupertinoColors.black,
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('Close'),
+            const SizedBox(height: 10),
+            Text(
+              title,
+              style: const TextStyle(
+                color: CupertinoColors.black,
+                fontSize: 18,
+              ),
             ),
           ],
-        );
-      },
+        ),
+      ),
     );
-  }
-
-  // Function to load the content of terms.txt from the assets
-  Future<String> _loadTermsText() async {
-    return await rootBundle.loadString('assets/terms.txt');
   }
 }

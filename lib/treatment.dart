@@ -20,6 +20,7 @@ class TreatmentDialog extends StatefulWidget {
 class _TreatmentDialogState extends State<TreatmentDialog> {
   List<Treatment> treatmentEntries = [];
   List<List<TextEditingController>> textEditingControllers = [];
+  late Size screenSize;
 
   bool _isFormValid() {
     for (var treatment in treatmentEntries) {
@@ -72,6 +73,13 @@ class _TreatmentDialogState extends State<TreatmentDialog> {
       treatmentEntries.add(Treatment());
     }
 
+    WidgetsBinding.instance!.addPostFrameCallback((_) {
+      // Get the screen size after the layout is built
+      setState(() {
+        screenSize = MediaQuery.of(context).size;
+      });
+    });
+
     // Initialize text editing controllers with the initial values
     for (int i = 0; i < treatmentEntries.length; i++) {
       List<TextEditingController> controllers = [];
@@ -101,48 +109,59 @@ class _TreatmentDialogState extends State<TreatmentDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+
     return Dialog(
-      child: Column(
-        children: [
-          ListView.builder(
-            shrinkWrap: true,
-            itemCount: treatmentEntries.length,
-            itemBuilder: (context, index) {
-              return _buildTreatmentEntry(index);
-            },
+      child: SizedBox(
+        width: screenSize.width * 0.9,
+        height: screenSize.height * 0.9,
+        child: SingleChildScrollView(
+          child: Form(
+            child: Column(
+              children: [
+                ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: treatmentEntries.length,
+                  itemBuilder: (context, index) {
+                    return _buildTreatmentEntry(index);
+                  },
+                ),
+                SizedBox(height: screenSize.height * 0.02),
+                ElevatedButton(
+                  onPressed: () {
+                    // Add treatment entry to the list
+                    setState(() {
+                      treatmentEntries.add(Treatment());
+                      List<TextEditingController> controllers = [];
+                      controllers.add(TextEditingController());
+                      controllers.add(TextEditingController());
+                      controllers.add(TextEditingController());
+                      textEditingControllers.add(controllers);
+                    });
+                  },
+                  child: Text('Add More'),
+                ),
+                SizedBox(height: screenSize.height * 0.02),
+                ElevatedButton(
+                  onPressed: _isFormValid()
+                      ? () {
+                          // Pass the filled-in data to the parent widget
+                          widget.onTreatmentSelected(treatmentEntries
+                              .where((treatment) =>
+                                  treatment.type != null &&
+                                  treatment.name != null &&
+                                  treatment.number != null &&
+                                  treatment.unit != null)
+                              .toList());
+                          Navigator.pop(context);
+                        }
+                      : null,
+                  child: Text('Done'),
+                ),
+              ],
+            ),
           ),
-          ElevatedButton(
-            onPressed: () {
-              // Add treatment entry to the list
-              setState(() {
-                treatmentEntries.add(Treatment());
-                List<TextEditingController> controllers = [];
-                controllers.add(TextEditingController());
-                controllers.add(TextEditingController());
-                controllers.add(TextEditingController());
-                textEditingControllers.add(controllers);
-              });
-            },
-            child: Text('Add More'),
-          ),
-          SizedBox(height: 20),
-          ElevatedButton(
-            onPressed: _isFormValid()
-                ? () {
-                    // Pass the filled-in data to the parent widget
-                    widget.onTreatmentSelected(treatmentEntries
-                        .where((treatment) =>
-                            treatment.type != null &&
-                            treatment.name != null &&
-                            treatment.number != null &&
-                            treatment.unit != null)
-                        .toList());
-                    Navigator.pop(context);
-                  }
-                : null,
-            child: Text('Done'),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -168,58 +187,67 @@ class _TreatmentDialogState extends State<TreatmentDialog> {
     }
 
     return Padding(
-      padding: EdgeInsets.all(8.0),
+      padding: EdgeInsets.all(screenSize.width * 0.02),
       child: Container(
+        width: screenSize.width * 0.8,
         decoration: BoxDecoration(
           border: Border.all(color: Colors.grey),
           borderRadius: BorderRadius.circular(5.0),
         ),
         child: Column(
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: _buildDropdownField(
-                    'Type',
-                    index,
-                    treatment.type,
-                    treatmentTypes,
-                  ),
-                ),
-                Expanded(
-                  child: _buildTextField(
-                    'Name',
-                    index,
-                    controllers[0],
-                  ),
-                ),
-                Expanded(
-                  child: _buildNumberField(
-                    'Number',
-                    index,
-                    treatment.number,
-                  ),
-                ),
-                Expanded(
-                  child: _buildDropdownField(
-                    'Unit',
-                    index,
-                    treatment.unit,
-                    treatmentUnits,
-                  ),
-                ),
-                IconButton(
-                  icon: Icon(
-                    Icons.clear,
-                    color: Colors.red,
-                  ),
-                  onPressed: () {
-                    _removeTreatmentEntry(index);
-                  },
-                ),
-              ],
+            ListView.builder(
+              shrinkWrap: true,
+              itemCount: 1,
+              itemBuilder: (context, index) {
+                return Row(
+                  children: [
+                    Expanded(
+                      child: _buildDropdownField(
+                        'Type',
+                        index,
+                        treatment.type,
+                        treatmentTypes,
+                      ),
+                    ),
+                    Expanded(
+                      child: _buildTextField(
+                        'Name',
+                        index,
+                        controllers[0],
+                      ),
+                    ),
+                    Expanded(
+                      child: _buildNumberField(
+                        'Number',
+                        index,
+                        treatment.number,
+                      ),
+                    ),
+                    Expanded(
+                      child: _buildDropdownField(
+                        'Unit',
+                        index,
+                        treatment.unit,
+                        treatmentUnits,
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(
+                        Icons.clear,
+                        color: Colors.red,
+                      ),
+                      onPressed: () {
+                        _removeTreatmentEntry(index);
+                      },
+                    ),
+                  ],
+                );
+              },
             ),
-            SizedBox(height: 8.0),
+            SizedBox(
+              height: screenSize.height * 0.01,
+            ),
             Row(
               children: [
                 Expanded(
@@ -227,6 +255,7 @@ class _TreatmentDialogState extends State<TreatmentDialog> {
                     'Sig',
                     index,
                     controllers[1],
+                    isEditable: isDaysEditable,
                   ),
                 ),
                 Expanded(
@@ -234,7 +263,7 @@ class _TreatmentDialogState extends State<TreatmentDialog> {
                     'Days',
                     index,
                     treatment.days,
-                    isEditable: isDaysEditable,
+                    isEditable: isMonthsEditable,
                   ),
                 ),
                 Expanded(
@@ -242,7 +271,7 @@ class _TreatmentDialogState extends State<TreatmentDialog> {
                     'Months',
                     index,
                     treatment.months,
-                    isEditable: isMonthsEditable,
+                    isEditable: isCustomDaysEditable,
                   ),
                 ),
                 Expanded(
@@ -301,7 +330,10 @@ class _TreatmentDialogState extends State<TreatmentDialog> {
   }) {
     if (!isEditable) {
       return Padding(
-        padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+        padding: EdgeInsets.symmetric(
+          horizontal: screenSize.width * 0.08,
+          vertical: screenSize.height * 0.02,
+        ),
         child: Text(
           controller.text ?? '',
           style: TextStyle(color: Colors.grey),
@@ -311,11 +343,13 @@ class _TreatmentDialogState extends State<TreatmentDialog> {
       bool isCustomDaysField = labelText == 'Custom Days';
 
       return Padding(
-        padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+        padding: EdgeInsets.symmetric(
+          horizontal: screenSize.width * 0.08,
+          vertical: screenSize.height * 0.02,
+        ),
         child: TextField(
           controller: controller,
-          readOnly:
-              isCustomDaysField, // Set readOnly to true for "Custom Days" field
+          readOnly: isCustomDaysField,
           decoration: InputDecoration(
             labelText: labelText,
           ),
@@ -351,7 +385,10 @@ class _TreatmentDialogState extends State<TreatmentDialog> {
       {bool isEditable = true}) {
     if (!isEditable) {
       return Padding(
-        padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+        padding: EdgeInsets.symmetric(
+          horizontal: screenSize.width * 0.08,
+          vertical: screenSize.height * 0.02,
+        ),
         child: Text(
           value ?? '',
           style: TextStyle(color: Colors.grey),
@@ -359,7 +396,10 @@ class _TreatmentDialogState extends State<TreatmentDialog> {
       );
     } else {
       return Padding(
-        padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+        padding: EdgeInsets.symmetric(
+          horizontal: screenSize.width * 0.08,
+          vertical: screenSize.height * 0.02,
+        ),
         child: GestureDetector(
           onTap: () {
             _showNumberPickerDialog(index, labelText, value);
@@ -369,12 +409,12 @@ class _TreatmentDialogState extends State<TreatmentDialog> {
               value != null && value.isNotEmpty
                   ? Text(
                       value,
-                      style: TextStyle(fontSize: 16.0),
+                      style: TextStyle(fontSize: screenSize.height * 0.02),
                     )
                   : Text(
                       labelText,
                       style: TextStyle(
-                        fontSize: 16.0,
+                        fontSize: screenSize.height * 0.02,
                         color: Colors.grey,
                       ),
                     ),
@@ -395,11 +435,11 @@ class _TreatmentDialogState extends State<TreatmentDialog> {
         return AlertDialog(
           title: Text(labelText),
           content: Container(
-            height: 200.0,
+            height: screenSize.height * 0.2,
             child: CupertinoPicker(
               scrollController:
                   FixedExtentScrollController(initialItem: initialValue),
-              itemExtent: 32.0,
+              itemExtent: screenSize.height * 0.032,
               onSelectedItemChanged: (int newValue) {
                 setState(() {
                   Treatment treatment = treatmentEntries[index];
@@ -459,7 +499,10 @@ class _TreatmentDialogState extends State<TreatmentDialog> {
   Widget _buildDropdownField(
       String labelText, int index, String? value, List<String> options) {
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      padding: EdgeInsets.symmetric(
+        horizontal: screenSize.width * 0.04,
+        vertical: screenSize.height * 0.02,
+      ),
       child: DropdownButtonFormField<String>(
         decoration: InputDecoration(
           labelText: labelText,

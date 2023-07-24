@@ -9,6 +9,8 @@ import 'package:timezone/timezone.dart' as timezone;
 
 class SignupHandler {
   static const String secretKeyKey = 'secret_key';
+  static String?
+      _temporarySecretCode; // Private static variable for temporary storage
 
   static Future<bool> signUpWithEmail(
     String username,
@@ -39,16 +41,29 @@ class SignupHandler {
       );
 
       if (userCredential.user != null) {
+        String? generatedSecretCode; // To store the generated secret code
+
+        if (isTwoFactorEnabled) {
+          // Generate a new random secret code if two-factor authentication is enabled
+          generatedSecretCode = await setupAuthenticator();
+          _temporarySecretCode =
+              generatedSecretCode; // Store the temporary secret code
+        }
+
         // Save user data to the database
         bool isSuccess = await saveUserDataToDatabase(
           username,
           email,
           password,
-          secretCode,
+          secretCode ??
+              generatedSecretCode, // Use the provided secret code if available, else use the generated one
           isTwoFactorEnabled,
         );
+
         if (isSuccess) {
           // Successful signup
+          _temporarySecretCode =
+              null; // Clear the temporary secret code after use
           return true;
         } else {
           // Failed to save user data to the database
@@ -88,7 +103,10 @@ class SignupHandler {
         if (userCredential.user != null) {
           String? secretCode;
           if (isTwoFactorEnabled) {
+            // Generate a new random secret code if two-factor authentication is enabled
             secretCode = await setupAuthenticator();
+            _temporarySecretCode =
+                secretCode; // Store the temporary secret code
           }
 
           // Save user data to the database
@@ -99,8 +117,11 @@ class SignupHandler {
             secretCode,
             isTwoFactorEnabled,
           );
+
           if (isSuccess) {
             // Successful signup with Google
+            _temporarySecretCode =
+                null; // Clear the temporary secret code after use
             return true;
           } else {
             // Failed to save user data to the database

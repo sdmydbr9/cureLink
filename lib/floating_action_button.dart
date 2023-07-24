@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'continuation.dart';
 import 'lab_report.dart';
 import 'dart:math' as math;
@@ -41,7 +42,7 @@ class _MyFloatingActionButtonState extends State<MyFloatingActionButton>
 
     _slideAnimation = Tween<Offset>(
       begin: Offset(0, 1.0),
-      end: Offset(0.75, 0), // Adjust the end value to move items further right
+      end: Offset(0.75, 0),
     ).animate(CurvedAnimation(
       parent: _animationController,
       curve: Curves.easeOut,
@@ -72,6 +73,57 @@ class _MyFloatingActionButtonState extends State<MyFloatingActionButton>
     });
   }
 
+  void _showActionSheet() {
+    showCupertinoModalPopup(
+      context: context,
+      builder: (BuildContext context) {
+        return CupertinoActionSheet(
+          title: Text('Options'),
+          actions: [
+            CupertinoActionSheetAction(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ContinuationPage(
+                      opdNumber: widget.opdNumber,
+                    ),
+                  ),
+                );
+              },
+              child: Text('Continuation Page'),
+            ),
+            CupertinoActionSheetAction(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => LabReportPage(
+                      opdNumber: widget.opdNumber,
+                      species: widget.species,
+                    ),
+                  ),
+                );
+              },
+              child: Text('Lab Report Page'),
+            ),
+            CupertinoActionSheetAction(
+              onPressed: widget.onResetPressed,
+              child: Text('Reset'),
+              isDestructiveAction: true,
+            ),
+          ],
+          cancelButton: CupertinoActionSheetAction(
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            child: Text('Cancel'),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Stack(
@@ -87,32 +139,18 @@ class _MyFloatingActionButtonState extends State<MyFloatingActionButton>
           bottom: 16.0,
           left: 16.0,
           child: FloatingActionButton(
-            onPressed: _toggleExpansion,
-            backgroundColor: Color.fromARGB(
-              255,
-              242,
-              77,
-              16,
-            ), // Set the background color to transparent
-            child: AnimatedBuilder(
-              animation: _rotateAnimation,
-              builder: (context, child) {
-                return Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Colors.white,
-                      width: 2.0,
-                    ),
-                  ),
-                  padding: EdgeInsets.all(8.0),
-                  child: Transform.rotate(
-                    angle: _rotateAnimation.value * math.pi,
-                    child: child,
-                  ),
-                );
-              },
-              child: Icon(_isExpanded ? Icons.close : Icons.add),
+            onPressed: _showActionSheet,
+            backgroundColor:
+                Colors.transparent, // Set background color to transparent
+            elevation: 0.0, // Remove elevation
+            child: Row(
+              children: [
+                Icon(
+                  Icons.more_vert,
+                  color: CupertinoColors.systemGrey2,
+                  size: 40, // System's gray color
+                ),
+              ],
             ),
           ),
         ),

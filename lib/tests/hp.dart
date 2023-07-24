@@ -90,9 +90,6 @@ class _HemoprotozoaPageState extends State<HemoprotozoaPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Hemoprotozoa Test'),
-      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(

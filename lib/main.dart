@@ -1,7 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_neumorphic/flutter_neumorphic.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'calculate/calculate_index.dart';
+import 'calculate/calculate_screen.dart';
 import 'lab_report.dart';
 import 'form.dart';
 import 'index.dart';
@@ -29,6 +31,7 @@ class MedicalPortalApp extends StatefulWidget {
 
 class _MedicalPortalAppState extends State<MedicalPortalApp> {
   bool isAuthenticated = false;
+  bool isLoading = true;
 
   void setAuthenticated(bool value) {
     setState(() {
@@ -41,22 +44,46 @@ class _MedicalPortalAppState extends State<MedicalPortalApp> {
     super.initState();
     // Set initial authentication state here (e.g., to false)
     isAuthenticated = false;
+
+    initializeApp().then((_) {
+      setState(() {
+        isLoading = false; // Set isLoading to false when the content is ready
+      });
+    });
+  }
+
+  Future<void> initializeApp() async {
+    // Add any additional app initialization code here
+    // If you need to perform asynchronous tasks during initialization,
+    // you can do it here and wait for the tasks to complete.
+    await Future.delayed(
+        Duration(seconds: 2)); // Simulate a 2-second delay for loading
   }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Medical Portal',
-      theme: ThemeData(
-        brightness: Brightness.light,
-        primaryColor: Colors.white,
-        // Change the primary color to the iOS blue accent
-        colorScheme: ColorScheme.fromSwatch().copyWith(
-            secondary: CupertinoColors
-                .systemGrey), // Use iOS blue as the secondary color
-        fontFamily: 'Arial',
+      home: SafeArea(
+        child: Scaffold(
+          backgroundColor: Colors.white, // Set the background color here
+          body: Builder(
+            builder: (BuildContext context) {
+              if (isLoading) {
+                // Show the Cupertino loading animation here
+                return Center(child: CupertinoActivityIndicator());
+              } else if (isAuthenticated) {
+                return MedicalPortalHomePage();
+              } else {
+                return LoginScreen(
+                  setAuthenticated: setAuthenticated,
+                  authentication: Authentication(),
+                );
+              }
+            },
+          ),
+        ),
       ),
-      // Use '/' as the home route, it will redirect to LoginScreen if not authenticated
       initialRoute: '/',
       onGenerateRoute: (settings) {
         switch (settings.name) {
@@ -113,13 +140,17 @@ class _MedicalPortalAppState extends State<MedicalPortalApp> {
             return MaterialPageRoute(
               builder: (_) => SignupScreen(),
             );
+          case '/calculatorScreen':
+            return MaterialPageRoute(
+              builder: (_) => MedicationCalculatorApp(),
+            );
           default:
             return MaterialPageRoute(
               builder: (_) => Scaffold(
                 appBar: AppBar(
-                  title: Text('Not Found'),
+                  title: const Text('Not Found'),
                 ),
-                body: Center(
+                body: const Center(
                   child: Text('Page not found'),
                 ),
               ),

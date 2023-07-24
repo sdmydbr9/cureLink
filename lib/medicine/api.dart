@@ -13,11 +13,12 @@ class MedicationAPI {
       final response = await http.get(url);
 
       if (response.statusCode == 200) {
-        final jsonResponse = response.body.toLowerCase();
+        final jsonResponse = json.decode(response.body);
+        print('JSON Response: $jsonResponse');
 
-        if (jsonResponse == 'exists') {
+        if (jsonResponse['result'] == 'exists') {
           return true;
-        } else if (jsonResponse == 'not_exists') {
+        } else if (jsonResponse['result'] == 'not_exists') {
           return false;
         }
       } else {

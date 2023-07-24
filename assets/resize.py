@@ -3,7 +3,7 @@ import os
 import sys
 
 def resize_and_rename_icon(icon_path, output_folder):
-    sizes = [(192, 192), (384, 384), (512, 512)]
+    sizes = [(64, 64), (192, 192), (384, 384), (512, 512)]
 
     # Open the original icon image
     with Image.open(icon_path) as img:

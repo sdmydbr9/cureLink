@@ -28,6 +28,7 @@ class PreprocessScreen extends StatelessWidget {
             Text(
                 'Body Weight: ${formData['bodyWeightKg']} kg ${formData['bodyWeightGm']} gm'),
             Text('Temperature: ${formData['temperature']}'),
+            Text('unit: ${formData['unit']}'),
             Text('Heart Rate: ${formData['heartRate']}'),
             Text('Pulse Rate: ${formData['pulseRate']}'),
             Text('Vaccination: ${formData['hasVaccination']}'),

@@ -10,6 +10,8 @@ import 'dart:ui';
 import 'continuation.dart';
 import 'lab_report.dart';
 import 'floating_action_button.dart';
+import 'pregnancy.dart';
+import 'package:blur/blur.dart';
 
 class MyForm extends StatefulWidget {
   @override
@@ -46,12 +48,36 @@ class _MyFormState extends State<MyForm> {
   late int pregnancyMonths;
   late int pregnancyYears;
   late TextEditingController opdNumberController;
+
   bool showHeartRatePicker = false;
   bool showPulseRatePicker = false;
   TextEditingController _treatmentController = TextEditingController();
   TextEditingController pregnancyController = TextEditingController();
 
   List<String> units = ['None', 'Celsius', 'Fahrenheit'];
+  List<String> sourceOptions = [
+    'TVCC',
+    'State Veterinary Hospital',
+    'Dispensary',
+    'Private',
+    'Others',
+  ];
+  List<String> departmentOptions = [
+    'Medicine',
+    'Surgery',
+    'Gynecology',
+  ];
+  List<String> speciesOptions = [
+    'Canine',
+    'Feline',
+    'Bovine',
+    'Porcine',
+    'Caprine',
+    'Lagomorphs',
+    'Equine',
+  ];
+  List<String> unitOptions = ['°C', '°F', 'K'];
+
   late String selectedUnit;
   late TextEditingController treatmentController;
 
@@ -92,6 +118,1065 @@ class _MyFormState extends State<MyForm> {
     treatments = parseTreatments(treatmentController.text);
   }
 
+  Future<void> _selectDate(BuildContext context) async {
+    // Get the current date
+    final DateTime currentDate = DateTime.now();
+
+    // Store the picked date in a temporary variable
+    DateTime pickedDate = currentDate;
+
+    // Show the modal popup with a glass-like transparent background
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (BuildContext context) {
+        return Opacity(
+          opacity:
+              0.7, // Adjust the opacity value (0.0 to 1.0) for the desired transparency
+          child: Container(
+            color: Colors
+                .transparent, // Use a transparent color for the background
+            child: BackdropFilter(
+              filter: ImageFilter.blur(
+                  sigmaX: 10, sigmaY: 10), // Adjust the blur strength as needed
+              child: Container(
+                height: 300.0,
+                child: CupertinoDatePicker(
+                  mode: CupertinoDatePickerMode.date,
+                  initialDateTime: pickedDate,
+                  minimumDate:
+                      DateTime(1900), // Set the minimum selectable date
+                  maximumDate: currentDate, // Set the maximum selectable date
+                  onDateTimeChanged: (DateTime newDate) {
+                    pickedDate = newDate;
+                  },
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    // Update the selected date with the picked date
+    if (pickedDate != null && pickedDate != currentDate) {
+      setState(() {
+        selectedDate = pickedDate;
+      });
+    }
+  }
+
+  void _updateOPDNumberPrefix() {
+    if (selectedSpecies == 'Bovine') {
+      opdNumberPrefix = 'B-';
+    } else if (selectedSpecies == 'Porcine') {
+      opdNumberPrefix = 'P-';
+    } else if (selectedSpecies == 'Canine') {
+      opdNumberPrefix = 'C-';
+    } else if (selectedSpecies == 'Feline') {
+      opdNumberPrefix = 'F-';
+    } else if (selectedSpecies == 'Caprine') {
+      opdNumberPrefix = 'Cap-';
+    } else if (selectedSpecies == 'Lagomorphs') {
+      opdNumberPrefix = 'L-';
+    } else if (selectedSpecies == 'Equine') {
+      opdNumberPrefix = 'E-';
+    } else {
+      opdNumberPrefix = '';
+    }
+  }
+
+  Widget _buildTemperatureSection() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+      decoration: BoxDecoration(
+        color: CupertinoColors
+            .lightBackgroundGray, // You can customize the background color here
+        borderRadius: BorderRadius.circular(
+            8.0), // Adjust the radius for the rounded corners
+      ),
+      child: CupertinoFormSection(
+        children: [
+          CupertinoFormRow(
+            child: Row(
+              children: [
+                Expanded(
+                  child: CupertinoTextField(
+                    onChanged: (value) {
+                      setState(() {
+                        temperature = value;
+                      });
+                    },
+                    keyboardType: TextInputType.number,
+                    placeholder: 'Temperature',
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: CupertinoSlidingSegmentedControl(
+                    groupValue: unit,
+                    onValueChanged: (value) {
+                      setState(() {
+                        unit = value as String;
+                      });
+                    },
+                    children: unitOptions.asMap().map((index, unit) {
+                      return MapEntry<String, Widget>(
+                        unit,
+                        Text(unit),
+                      );
+                    }),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSourceSection() {
+    return CupertinoFormSection(
+      header: GestureDetector(
+        onTap: () {
+          _showCupertinoPicker(sourceOptions, selectedSource, 'Source',
+              (newValue) {
+            setState(() {
+              selectedSource = newValue;
+            });
+          });
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+          decoration: BoxDecoration(
+            color: CupertinoColors
+                .lightBackgroundGray, // You can customize the background color here
+            borderRadius: BorderRadius.circular(
+                8.0), // Adjust the radius for the rounded corners
+          ),
+          child: Text(
+            selectedSource.isNotEmpty ? 'Source: $selectedSource' : 'Source',
+            style: const TextStyle(
+              fontSize: 16.0,
+              color: CupertinoColors
+                  .black, // You can customize the text color here
+            ),
+          ),
+        ),
+      ),
+      children: [], // Add other form elements inside this list if needed
+    );
+  }
+
+  Widget _buildDepartmentSection() {
+    return CupertinoFormSection(
+      header: GestureDetector(
+        onTap: () {
+          _showCupertinoPicker(
+            departmentOptions,
+            selectedDepartment,
+            'Department',
+            (newValue) {
+              setState(() {
+                selectedDepartment = newValue;
+              });
+            },
+          );
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+          decoration: BoxDecoration(
+            color: CupertinoColors
+                .lightBackgroundGray, // You can customize the background color here
+            borderRadius: BorderRadius.circular(
+                8.0), // Adjust the radius for the rounded corners
+          ),
+          child: Text(
+            selectedDepartment.isNotEmpty
+                ? 'Department: $selectedDepartment'
+                : 'Department',
+            style: const TextStyle(
+              fontSize: 16.0,
+              color: CupertinoColors
+                  .black, // You can customize the text color here
+            ),
+          ),
+        ),
+      ),
+      children: [], // Add other form elements inside this list if needed
+    );
+  }
+
+  Widget _buildSpeciesSection() {
+    return CupertinoFormSection(
+      header: GestureDetector(
+        onTap: () {
+          _showCupertinoPicker(
+            speciesOptions,
+            selectedSpecies,
+            'Species',
+            (newValue) {
+              setState(() {
+                selectedSpecies = newValue;
+                _updateOPDNumberPrefix(); // Call the method to update the OPD number prefix
+              });
+            },
+          );
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+          decoration: BoxDecoration(
+            color: CupertinoColors
+                .lightBackgroundGray, // You can customize the background color here
+            borderRadius: BorderRadius.circular(
+                8.0), // Adjust the radius for the rounded corners
+          ),
+          child: Text(
+            selectedSpecies.isNotEmpty
+                ? 'Species: $selectedSpecies'
+                : 'Species',
+            style: const TextStyle(
+              fontSize: 16.0,
+              color: CupertinoColors
+                  .black, // You can customize the text color here
+            ),
+          ),
+        ),
+      ),
+      children: [], // Add other form elements inside this list if needed
+    );
+  }
+
+  void _showCupertinoPicker(List<String> options, String selectedValue,
+      String title, void Function(String) onValueChanged) {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return GestureDetector(
+          onTap: () {}, // Prevent taps from dismissing the modal
+          child: Container(
+            height: 200.0,
+            child: CupertinoPicker(
+              itemExtent: 32.0,
+              onSelectedItemChanged: (int index) {
+                onValueChanged(options[index]);
+              },
+              children: options.map((option) => Text(option)).toList(),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildPulseRateSection() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+      decoration: BoxDecoration(
+        color: CupertinoColors
+            .lightBackgroundGray, // You can customize the background color here
+        borderRadius: BorderRadius.circular(
+            8.0), // Adjust the radius for the rounded corners
+      ),
+      child: CupertinoFormSection(
+        children: [
+          Row(
+            children: [
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    showPulseRatePicker = true;
+                  });
+                  _showPulseRatePicker();
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  child: CupertinoFormRow(
+                    child: Text(
+                      pulseRate.isNotEmpty ? pulseRate : 'Select pulse Rate',
+                      style: const TextStyle(
+                        fontSize: 16.0,
+                        color: CupertinoColors
+                            .black, // You can customize the text color here
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const Expanded(
+                child: SizedBox(),
+              ),
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    pulseRate = '';
+                  });
+                },
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8.0),
+                  child: Icon(
+                    CupertinoIcons.refresh,
+                    size: 20.0,
+                    color: Colors.red,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeartRateSection() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+      decoration: BoxDecoration(
+        color: CupertinoColors
+            .lightBackgroundGray, // You can customize the background color here
+        borderRadius: BorderRadius.circular(
+            8.0), // Adjust the radius for the rounded corners
+      ),
+      child: CupertinoFormSection(
+        children: [
+          Row(
+            children: [
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    showHeartRatePicker = true;
+                  });
+                  _showHeartRatePicker();
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  child: CupertinoFormRow(
+                    child: Text(
+                      heartRate.isNotEmpty ? heartRate : 'Select Heart Rate',
+                      style: const TextStyle(
+                        fontSize: 16.0,
+                        color: CupertinoColors
+                            .black, // You can customize the text color here
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const Expanded(
+                child: SizedBox(),
+              ),
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    heartRate = '';
+                  });
+                },
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8.0),
+                  child: Icon(
+                    CupertinoIcons.refresh,
+                    size: 20.0,
+                    color: Colors.red,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDewormingSection() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+      decoration: BoxDecoration(
+        color: CupertinoColors
+            .lightBackgroundGray, // You can customize the background color here
+        borderRadius: BorderRadius.circular(
+            8.0), // Adjust the radius for the rounded corners
+      ),
+      child: CupertinoFormRow(
+        child: Row(
+          children: [
+            CupertinoSwitch(
+              value: hasDeworming,
+              onChanged: (value) {
+                setState(() {
+                  hasDeworming = value;
+                });
+              },
+            ),
+            const Text(
+              'Deworming',
+              style: TextStyle(
+                fontSize: 16.0,
+                color: CupertinoColors
+                    .black, // You can customize the text color here
+              ),
+            ),
+            const SizedBox(width: 10),
+            if (hasDeworming)
+              GestureDetector(
+                onTap: () async {
+                  final selectedDate = await showDatePicker(
+                    context: context,
+                    initialDate: DateTime.now(),
+                    firstDate: DateTime(2022),
+                    lastDate: DateTime.now(),
+                  );
+                  setState(() {
+                    this.dewormingDate = selectedDate;
+                  });
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  child: CupertinoFormRow(
+                    child: Text(
+                      dewormingDate != null
+                          ? '${dewormingDate?.year}-${dewormingDate?.month}-${dewormingDate?.day}'
+                          : 'Select Date',
+                      style: TextStyle(
+                        color: dewormingDate != null
+                            ? Colors.black
+                            : Colors.grey[700],
+                      ),
+                    ),
+                    prefix: const Text(
+                      'Date',
+                      style: TextStyle(
+                        fontSize: 16.0,
+                        color: CupertinoColors
+                            .black, // You can customize the text color here
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOPDNumberSection() {
+    return CupertinoFormSection(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+          child: Stack(
+            children: [
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+                decoration: BoxDecoration(
+                  color: CupertinoColors
+                      .lightBackgroundGray, // You can customize the background color here
+                  borderRadius: BorderRadius.circular(
+                      8.0), // Adjust the radius for the rounded corners
+                ),
+                child: const Text(
+                  'OPD Number',
+                  style: TextStyle(
+                    fontSize: 16.0,
+                    fontWeight: FontWeight.bold,
+                    color: CupertinoColors
+                        .black, // You can customize the text color here
+                  ),
+                ),
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: CupertinoTextField(
+                      controller: opdNumberController,
+                      onChanged: (value) {
+                        setState(() {
+                          if (value.isEmpty) {
+                            opdNumber = '';
+                          } else {
+                            opdNumber = opdNumberPrefix + value;
+                          }
+                        });
+                      },
+                      keyboardType: TextInputType.number,
+                      placeholder: 'OPD Number',
+                      prefix: Text(opdNumberPrefix),
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSexSection() {
+    return CupertinoFormSection(
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+          decoration: BoxDecoration(
+            color: CupertinoColors
+                .lightBackgroundGray, // You can customize the background color here
+            borderRadius: BorderRadius.circular(
+                8.0), // Adjust the radius for the rounded corners
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Sex',
+                style: TextStyle(
+                  fontSize: 16.0,
+
+                  color: CupertinoColors
+                      .black, // You can customize the text color here
+                ),
+              ),
+              CupertinoFormRow(
+                child: CupertinoSlidingSegmentedControl(
+                  groupValue: sex.isNotEmpty ? sex : null,
+                  onValueChanged: (value) {
+                    setState(() {
+                      sex = value as String;
+                    });
+                  },
+                  children: const {
+                    'Male': Text('Male'),
+                    'Female': Text('Female'),
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBodyWeightSection() {
+    return CupertinoFormSection(
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+          decoration: BoxDecoration(
+            color: CupertinoColors.lightBackgroundGray,
+            borderRadius: BorderRadius.circular(8.0),
+          ),
+          child: CupertinoFormRow(
+            child: Row(
+              children: [
+                Text(
+                  getFormattedBodyWeight(),
+                  style: const TextStyle(
+                    fontSize: 16.0,
+                    color: CupertinoColors.black,
+                  ),
+                ),
+                const SizedBox(width: 8.0),
+                Expanded(
+                  child: CupertinoTextField(
+                    onChanged: (value) {
+                      if (value.isEmpty || double.tryParse(value) == null) {
+                        setState(() {
+                          bodyWeightKg = null;
+                        });
+                      } else {
+                        setState(() {
+                          bodyWeightKg = double.parse(value);
+                        });
+                      }
+                    },
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                    ],
+                    placeholder: 'Kilograms',
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: CupertinoTextField(
+                    onChanged: (value) {
+                      if (value.isEmpty || int.tryParse(value) == null) {
+                        setState(() {
+                          bodyWeightGm = null;
+                        });
+                      } else {
+                        setState(() {
+                          bodyWeightGm = int.parse(value);
+                        });
+                      }
+                    },
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
+                    ],
+                    placeholder: 'Grams',
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  String getFormattedBodyWeight() {
+    if (bodyWeightKg == null && bodyWeightGm == null) {
+      return 'Body Weight: ';
+    } else {
+      double totalWeight = (bodyWeightKg ?? 0) + (bodyWeightGm ?? 0) / 1000;
+      return 'Body Weight: ${totalWeight.toStringAsFixed(2)} kg';
+    }
+  }
+
+  void _showBodyWeightPicker() {
+    showCupertinoModalPopup<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return Container(
+          height: 200,
+          color: Colors.white,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              CupertinoPicker(
+                itemExtent: 32.0,
+                onSelectedItemChanged: (selectedIndex) {
+                  setState(() {
+                    if (selectedIndex == 0) {
+                      bodyWeightKg = null;
+                    } else {
+                      bodyWeightKg = selectedIndex.toDouble();
+                    }
+                  });
+                },
+                children: List<Widget>.generate(101, (index) {
+                  return Text('${index.toString()}');
+                }),
+              ),
+              CupertinoPicker(
+                itemExtent: 32.0,
+                onSelectedItemChanged: (selectedIndex) {
+                  setState(() {
+                    if (selectedIndex == 0) {
+                      bodyWeightGm = null;
+                    } else {
+                      bodyWeightGm = selectedIndex - 1;
+                    }
+                  });
+                },
+                children: List<Widget>.generate(1000, (index) {
+                  return Text('${index.toString()}');
+                }),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSymptomsSection() {
+    return Container(
+      decoration: BoxDecoration(
+        color: CupertinoColors
+            .lightBackgroundGray, // You can customize the background color here
+        borderRadius: BorderRadius.circular(
+            8.0), // Adjust the radius for the rounded corners
+      ),
+      child: CupertinoFormSection(
+        decoration: BoxDecoration(
+          color: Colors
+              .transparent, // Remove inner background color to maintain consistency
+          border: Border.all(
+            color: CupertinoColors.systemGrey3,
+            width: 1.0,
+          ),
+          borderRadius: BorderRadius.circular(8.0),
+        ),
+        children: [
+          CupertinoFormRow(
+            child: CupertinoTextFormFieldRow(
+              onChanged: (value) {
+                setState(() {
+                  symptoms = value;
+                });
+              },
+              placeholder: 'Symptoms',
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: Colors.transparent, // Remove inner border
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAdviceSection() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+      decoration: BoxDecoration(
+        color: CupertinoColors
+            .lightBackgroundGray, // You can customize the background color here
+        borderRadius: BorderRadius.circular(
+            8.0), // Adjust the radius for the rounded corners
+      ),
+      child: CupertinoFormSection(
+        decoration: BoxDecoration(
+          color: Colors
+              .transparent, // Remove inner background color to maintain consistency
+          border: Border.all(
+            color: CupertinoColors.systemGrey3,
+            width: 1.0,
+          ),
+          borderRadius: BorderRadius.circular(8.0),
+        ),
+        children: [
+          CupertinoFormRow(
+            child: CupertinoTextFormFieldRow(
+              onChanged: (value) {
+                setState(() {
+                  advice = value;
+                });
+              },
+              placeholder: 'Advice',
+              decoration: BoxDecoration(
+                border: Border.all(
+                    color: Colors.transparent), // Remove inner border
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAgeSection() {
+    return CupertinoFormSection(
+      header: GestureDetector(
+        onTap: () {
+          _showAgePicker();
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+          decoration: BoxDecoration(
+            color: CupertinoColors
+                .lightBackgroundGray, // You can customize the background color here
+            borderRadius: BorderRadius.circular(
+                8.0), // Adjust the radius for the rounded corners
+          ),
+          child: Text(
+            'Age: ${getFormattedAge()}',
+            style: const TextStyle(
+              fontSize: 18.0,
+              color: CupertinoColors
+                  .black, // You can customize the text color here
+            ),
+          ),
+        ),
+      ),
+      children: [], // Add other form elements inside this list if needed
+    );
+  }
+
+  void _showAgePicker() {
+    showCupertinoModalPopup(
+      context: context,
+      builder: (BuildContext context) {
+        return Container(
+          height: 200,
+          color: Colors.white,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              Expanded(
+                child: CupertinoPicker(
+                  itemExtent: 32.0,
+                  onSelectedItemChanged: (selectedIndex) {
+                    setState(() {
+                      ageYears = (selectedIndex == 0)
+                          ? ''
+                          : (selectedIndex - 1)
+                              .toString(); // Update the selected year
+                    });
+                  },
+                  children: List<Widget>.generate(101, (index) {
+                    if (index == 0) {
+                      return const Text('Years'); // Placeholder for years
+                    }
+                    return Text(
+                        '${(index - 1).toString()} years'); // Generate options for 0 to 100 years
+                  }),
+                ),
+              ),
+              Expanded(
+                child: CupertinoPicker(
+                  itemExtent: 32.0,
+                  onSelectedItemChanged: (selectedIndex) {
+                    setState(() {
+                      ageMonths = (selectedIndex == 0)
+                          ? ''
+                          : (selectedIndex - 1)
+                              .toString(); // Update the selected month
+                    });
+                  },
+                  children: List<Widget>.generate(13, (index) {
+                    if (index == 0) {
+                      return const Text('Months'); // Placeholder for months
+                    }
+                    return Text(
+                        '${(index - 1).toString()} months'); // Generate options for 0 to 12 months
+                  }),
+                ),
+              ),
+              Expanded(
+                child: CupertinoPicker(
+                  itemExtent: 32.0,
+                  onSelectedItemChanged: (selectedIndex) {
+                    setState(() {
+                      ageDays = (selectedIndex == 0)
+                          ? ''
+                          : (selectedIndex - 1)
+                              .toString(); // Update the selected day
+                    });
+                  },
+                  children: List<Widget>.generate(32, (index) {
+                    if (index == 0) {
+                      return const Text('Days'); // Placeholder for days
+                    }
+                    return Text(
+                        '${(index - 1).toString()} days'); // Generate options for 0 to 31 days
+                  }),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  String getFormattedAge() {
+    String formattedAge = '';
+
+    if (ageYears.isNotEmpty) {
+      formattedAge += '$ageYears year${ageYears == '1' ? '' : 's'} ';
+    }
+
+    if (ageMonths.isNotEmpty) {
+      formattedAge += '$ageMonths month${ageMonths == '1' ? '' : 's'} ';
+    }
+
+    if (ageDays.isNotEmpty) {
+      formattedAge += '$ageDays day${ageDays == '1' ? '' : 's'}';
+    }
+
+    if (formattedAge.isEmpty) {
+      formattedAge =
+          'Select age'; // Display a default message if no age is selected
+    }
+
+    return formattedAge;
+  }
+
+  Widget _buildVaccinationSection() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+      decoration: BoxDecoration(
+        color: CupertinoColors
+            .lightBackgroundGray, // You can customize the background color here
+        borderRadius: BorderRadius.circular(
+            8.0), // Adjust the radius for the rounded corners
+      ),
+      child: CupertinoFormRow(
+        child: Row(
+          children: [
+            CupertinoSwitch(
+              value: hasVaccination,
+              onChanged: (value) {
+                setState(() {
+                  hasVaccination = value;
+                });
+              },
+            ),
+            const Text(
+              'Vaccination',
+              style: TextStyle(
+                fontSize: 16.0,
+                color: CupertinoColors
+                    .black, // You can customize the text color here
+              ),
+            ),
+            const SizedBox(width: 10),
+            if (hasVaccination)
+              GestureDetector(
+                onTap: () async {
+                  final selectedDate = await showDatePicker(
+                    context: context,
+                    initialDate: DateTime.now(),
+                    firstDate: DateTime(2022),
+                    lastDate: DateTime.now(),
+                  );
+                  setState(() {
+                    this.vaccinationDate = selectedDate;
+                  });
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  child: CupertinoFormRow(
+                    child: Text(
+                      vaccinationDate != null
+                          ? '${vaccinationDate?.year}-${vaccinationDate?.month}-${vaccinationDate?.day}'
+                          : 'Select Date',
+                      style: TextStyle(
+                        color: vaccinationDate != null
+                            ? Colors.black
+                            : Colors.grey[700],
+                      ),
+                    ),
+                    prefix: const Text(
+                      'Date',
+                      style: TextStyle(
+                        fontSize: 16.0,
+                        color: CupertinoColors
+                            .black, // You can customize the text color here
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTreatmentSection() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+      decoration: BoxDecoration(
+        color: CupertinoColors
+            .lightBackgroundGray, // You can customize the background color here
+        borderRadius: BorderRadius.circular(
+            8.0), // Adjust the radius for the rounded corners
+      ),
+      child: GestureDetector(
+        onTap: () {
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return TreatmentDialog(
+                onTreatmentSelected: handleTreatmentSelected,
+                previousTreatments: treatments,
+              );
+            },
+          ).then((value) {
+            // The dialog has been closed and you can handle the value returned here
+            // For example, you can update the treatmentController text here
+            treatmentController.text = value ?? '';
+          });
+        },
+        child: TextFormField(
+          enabled: false,
+          controller: treatmentController,
+          maxLines: null,
+          decoration: const InputDecoration(
+            labelText: 'Treatment',
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSpeciesSegmentedControl() {
+    return CupertinoSlidingSegmentedControl(
+      groupValue: selectedSpecies.isNotEmpty ? selectedSpecies : null,
+      onValueChanged: (value) {
+        setState(() {
+          selectedSpecies = value as String;
+          if (selectedSpecies == 'Bovine') {
+            opdNumberPrefix = 'B-';
+          } else if (selectedSpecies == 'Porcine') {
+            opdNumberPrefix = 'P-';
+          } else if (selectedSpecies == 'Canine') {
+            opdNumberPrefix = 'C-';
+          } else if (selectedSpecies == 'Feline') {
+            opdNumberPrefix = 'F-';
+          } else if (selectedSpecies == 'Caprine') {
+            opdNumberPrefix = 'Cap-';
+          } else if (selectedSpecies == 'Lagomorphs') {
+            opdNumberPrefix = 'L-';
+          } else if (selectedSpecies == 'Equine') {
+            opdNumberPrefix = 'E-';
+          } else {
+            opdNumberPrefix = '';
+          }
+        });
+      },
+      children: const {
+        'Canine': Text('Canine'),
+        'Feline': Text('Feline'),
+        'Bovine': Text('Bovine'),
+        'Porcine': Text('Porcine'),
+        'Caprine': Text('Caprine'),
+        'Lagomorphs': Text('Lagomorphs'),
+        'Equine': Text('Equine'),
+      },
+    );
+  }
+
+  void _openPregnancyDialog() {
+    showCupertinoModalPopup(
+      context: context,
+      builder: (BuildContext context) {
+        return PregnancyDialog();
+      },
+    ).then((value) {
+      if (value != null && value is Map<String, int>) {
+        setState(() {
+          pregnancyMonths = value['months'] ?? 0;
+
+          if (value['years'] != null && value['years']! > 0) {
+            pregnancyYears = value['years']!;
+            pregnancyDuration = '$pregnancyYears years ';
+          } else {
+            pregnancyDuration = '';
+          }
+
+          if (pregnancyMonths > 0) {
+            pregnancyDuration += '$pregnancyMonths months ';
+          }
+
+          if (value['days'] != null && value['days']! > 0) {
+            pregnancyDays = value['days']!;
+            pregnancyDuration += '$pregnancyDays days';
+          }
+
+          pregnancyController.text = pregnancyDuration;
+        });
+      }
+    });
+  }
+
   void updatePregnancyDuration(int days, int months, int years) {
     setState(() {
       pregnancyDays = days;
@@ -105,50 +1190,6 @@ class _MyFormState extends State<MyForm> {
   void dispose() {
     opdNumberController.dispose();
     super.dispose();
-  }
-
-  Future<void> _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: selectedDate ?? DateTime.now(), // Set the initial date
-      firstDate: DateTime(2000), // Set the range of selectable dates
-      lastDate: DateTime(2100),
-    );
-
-    if (picked != null && picked != selectedDate) {
-      setState(() {
-        selectedDate = picked; // Update the selected date
-      });
-    }
-  }
-
-  String getFormattedBodyWeight() {
-    if (bodyWeightKg == null && bodyWeightGm == null) {
-      return 'Body Weight: ';
-    } else {
-      double totalWeight = (bodyWeightKg ?? 0) + (bodyWeightGm ?? 0) / 1000;
-      return 'Body Weight: ${totalWeight.toStringAsFixed(2)} kg';
-    }
-  }
-
-  String getFormattedAge() {
-    String formattedAge = '';
-
-    if (ageYears.isNotEmpty) {
-      formattedAge += '$ageYears.';
-    }
-
-    if (ageMonths.isNotEmpty) {
-      formattedAge += '$ageMonths ';
-    }
-
-    formattedAge += 'year';
-
-    if (ageYears != '1') {
-      formattedAge += 's';
-    }
-
-    return formattedAge;
   }
 
   void _navigateToContinuation() {
@@ -232,7 +1273,7 @@ class _MyFormState extends State<MyForm> {
               });
             },
             children: [
-              Text('None'),
+              const Text('None'),
               ...List<Widget>.generate(121, (index) {
                 return Text('${index + 30} beats per minute');
               }),
@@ -263,7 +1304,7 @@ class _MyFormState extends State<MyForm> {
               });
             },
             children: [
-              Text('None'),
+              const Text('None'),
               ...List<Widget>.generate(121, (index) {
                 return Text('${index + 30} per minute');
               }),
@@ -319,10 +1360,12 @@ class _MyFormState extends State<MyForm> {
       'selectedDepartment': selectedDepartment,
       'selectedSpecies': selectedSpecies,
       'opdNumber': opdNumber,
+      'age': getFormattedAge(),
       'sex': sex,
       'bodyWeightKg': bodyWeightKg,
       'bodyWeightGm': bodyWeightGm,
       'temperature': temperature,
+      'unit': unit,
       'heartRate': heartRate,
       'pulseRate': pulseRate,
       'hasVaccination': hasVaccination,
@@ -359,56 +1402,36 @@ class _MyFormState extends State<MyForm> {
     double containerHeight = screenHeight * 0.7;
     double temperatureWidth = screenWidth * 0.1;
     double unitWidth = screenWidth * 0.2;
+    final mediaQuery = MediaQuery.of(context);
+    final isPortrait = mediaQuery.orientation == Orientation.portrait;
+    final layoutSpacing = isPortrait ? 16.0 : 32.0;
+    final fontSize = isPortrait ? 16.0 : 20.0;
 
     final dateFormat = DateFormat('d MMMM yyyy');
     final formattedDate =
         selectedDate != null ? dateFormat.format(selectedDate!) : '';
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Medical Portal'),
-        centerTitle: true,
-      ),
-      body: Container(
-        decoration: BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('assets/background_image.jpg'),
-            fit: BoxFit.cover,
+    return Container(
+      color: CupertinoColors.white,
+      child: Container(
+        // Remove the surrounding Padding widget
+
+        child: CupertinoPageScaffold(
+          navigationBar: const CupertinoNavigationBar(
+            middle: Text('Medical Portal'),
           ),
-        ),
-        child: Stack(
-          children: [
-            Center(
-              child: GlassmorphicContainer(
-                width: containerWidth,
-                height: containerHeight,
-                borderRadius: 20,
-                blur: 10,
-                alignment: Alignment.center,
-                border: 2,
-                linearGradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFFffffff).withOpacity(0.2),
-                    Color(0xFFFFFFFF).withOpacity(0.2),
-                  ],
-                ),
-                borderGradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFFffffff).withOpacity(0.5),
-                    Color((0xFFFFFFFF)).withOpacity(0.5),
-                  ],
-                ),
-                child: SingleChildScrollView(
-                  padding: EdgeInsets.all(20),
+          child: SafeArea(
+            child: SingleChildScrollView(
+              child: DefaultTextStyle(
+                style: CupertinoTheme.of(context).textTheme.textStyle,
+                child: Container(
+                  color: Colors
+                      .white, // Set the background color of the Container to white
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Align(
-                        alignment: Alignment.topRight,
+                        alignment: Alignment.topLeft,
                         child: GestureDetector(
                           onTap: () {
                             _selectDate(context);
@@ -417,1061 +1440,175 @@ class _MyFormState extends State<MyForm> {
                             formattedDate.isNotEmpty
                                 ? 'Date: $formattedDate'
                                 : 'Select Date',
-                            style: TextStyle(fontSize: 18),
+                            style: const TextStyle(fontSize: 18),
                           ),
                         ),
                       ),
-                      DropdownButtonFormField<String>(
-                        value:
-                            selectedSource.isNotEmpty ? selectedSource : null,
-                        onChanged: (value) {
-                          setState(() {
-                            selectedSource = value!;
-                          });
-                        },
-                        items: [
-                          DropdownMenuItem(
-                            value: 'TVCC',
-                            child: Text('TVCC'),
-                          ),
-                          DropdownMenuItem(
-                            value: 'State Veterinary Hospital',
-                            child: Text('State Veterinary Hospital'),
-                          ),
-                          DropdownMenuItem(
-                            value: 'Dispensary',
-                            child: Text('Dispensary'),
-                          ),
-                          DropdownMenuItem(
-                            value: 'Private',
-                            child: Text('Private'),
-                          ),
-                          DropdownMenuItem(
-                            value: 'Others',
-                            child: Text('Others'),
-                          ),
-                        ],
-                        decoration: InputDecoration(
-                          labelText: 'Source',
-                        ),
+                      const SizedBox(
+                        height: 40,
                       ),
-                      DropdownButtonFormField<String>(
-                        value: selectedDepartment.isNotEmpty
-                            ? selectedDepartment
-                            : null,
-                        onChanged: (value) {
-                          setState(() {
-                            selectedDepartment = value!;
-                          });
-                        },
-                        items: [
-                          DropdownMenuItem(
-                            value: 'Medicine',
-                            child: Text('Medicine'),
-                          ),
-                          DropdownMenuItem(
-                            value: 'Surgery',
-                            child: Text('Surgery'),
-                          ),
-                          DropdownMenuItem(
-                            value: 'Gynecology',
-                            child: Text('Gynecology'),
-                          ),
-                        ],
-                        decoration: InputDecoration(
-                          labelText: 'Department',
-                        ),
-                      ),
-                      DropdownButtonFormField<String>(
-                        value:
-                            selectedSpecies.isNotEmpty ? selectedSpecies : null,
-                        onChanged: (value) {
-                          setState(() {
-                            selectedSpecies = value!;
-                            if (selectedSpecies == 'Bovine') {
-                              opdNumberPrefix = 'B-';
-                            } else if (selectedSpecies == 'Porcine') {
-                              opdNumberPrefix = 'P-';
-                            } else if (selectedSpecies == 'Canine') {
-                              opdNumberPrefix = 'C-';
-                            } else if (selectedSpecies == 'Feline') {
-                              opdNumberPrefix = 'F-';
-                            } else if (selectedSpecies == 'Caprine') {
-                              opdNumberPrefix = 'Cap-';
-                            } else if (selectedSpecies == 'Lagomorphs') {
-                              opdNumberPrefix = 'L-';
-                            } else if (selectedSpecies == 'Equine') {
-                              opdNumberPrefix = 'E-';
-                            } else {
-                              opdNumberPrefix = '';
-                            }
-                          });
-                        },
-                        items: [
-                          DropdownMenuItem(
-                            value: 'Canine',
-                            child: Text('Canine'),
-                          ),
-                          DropdownMenuItem(
-                            value: 'Feline',
-                            child: Text('Feline'),
-                          ),
-                          DropdownMenuItem(
-                            value: 'Bovine',
-                            child: Text('Bovine'),
-                          ),
-                          DropdownMenuItem(
-                            value: 'Porcine',
-                            child: Text('Porcine'),
-                          ),
-                          DropdownMenuItem(
-                            value: 'Caprine',
-                            child: Text('Caprine'),
-                          ),
-                          DropdownMenuItem(
-                            value: 'Lagomorphs',
-                            child: Text('Lagomorphs'),
-                          ),
-                          DropdownMenuItem(
-                            value: 'Equine',
-                            child: Text('Equine'),
-                          ),
-                        ],
-                        decoration: InputDecoration(
-                          labelText: 'Species',
-                        ),
-                      ),
-                      TextFormField(
-                        controller: opdNumberController,
-                        onChanged: (value) {
-                          setState(() {
-                            if (value.isEmpty) {
-                              opdNumber = '';
-                            } else {
-                              opdNumber = opdNumberPrefix + value;
-                            }
-                          });
-                        },
-                        keyboardType: TextInputType.number,
-                        decoration: InputDecoration(
-                          labelText: 'OPD Number',
-                          hintText: opdNumber.isNotEmpty ? opdNumber : '',
-                          prefixText: opdNumberPrefix,
-                        ),
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                        ],
-                      ),
-                      DropdownButtonFormField<String>(
-                        value: sex.isNotEmpty ? sex : null,
-                        onChanged: (value) {
-                          setState(() {
-                            sex = value!;
-                          });
-                        },
-                        items: [
-                          DropdownMenuItem(
-                            value: 'Male',
-                            child: Text('Male'),
-                          ),
-                          DropdownMenuItem(
-                            value: 'Female',
-                            child: Text('Female'),
-                          ),
-                        ],
-                        decoration: InputDecoration(
-                          labelText: 'Sex',
-                        ),
-                      ),
-                      SizedBox(height: 20),
-                      ElevatedButton(
-                        onPressed: () {
-                          showCupertinoModalPopup(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return Container(
-                                height: 200,
-                                color: Colors.white,
-                                child: Column(
-                                  children: [
-                                    CupertinoPicker(
-                                      itemExtent: 32.0,
-                                      onSelectedItemChanged: (selectedIndex) {
-                                        setState(() {
-                                          ageYears = (selectedIndex == 0)
-                                              ? ''
-                                              : (selectedIndex - 1)
-                                                  .toString(); // Update the selected year
-                                        });
-                                      },
-                                      children:
-                                          List<Widget>.generate(101, (index) {
-                                        if (index == 0) {
-                                          return Text(
-                                              'Years'); // Placeholder for years
-                                        }
-                                        return Text(
-                                            '${(index - 1).toString()} years'); // Generate options for 0 to 100 years
-                                      }),
-                                    ),
-                                    CupertinoPicker(
-                                      itemExtent: 32.0,
-                                      onSelectedItemChanged: (selectedIndex) {
-                                        setState(() {
-                                          ageMonths = (selectedIndex == 0)
-                                              ? ''
-                                              : (selectedIndex - 1)
-                                                  .toString(); // Update the selected month
-                                        });
-                                      },
-                                      children:
-                                          List<Widget>.generate(13, (index) {
-                                        if (index == 0) {
-                                          return Text(
-                                              'Months'); // Placeholder for months
-                                        }
-                                        return Text(
-                                            '${(index - 1).toString()} months'); // Generate options for 0 to 12 months
-                                      }),
-                                    ),
-                                    CupertinoPicker(
-                                      itemExtent: 32.0,
-                                      onSelectedItemChanged: (selectedIndex) {
-                                        setState(() {
-                                          ageDays = (selectedIndex == 0)
-                                              ? ''
-                                              : (selectedIndex - 1)
-                                                  .toString(); // Update the selected day
-                                        });
-                                      },
-                                      children:
-                                          List<Widget>.generate(32, (index) {
-                                        if (index == 0) {
-                                          return Text(
-                                              'Days'); // Placeholder for days
-                                        }
-                                        return Text(
-                                            '${(index - 1).toString()} days'); // Generate options for 0 to 31 days
-                                      }),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                          );
-                        },
-                        child: Text('Show Age Picker'),
-                      ),
-                      Text(
-                        'Age: ${getFormattedAge()}',
-                        style: TextStyle(
-                          fontSize: 18.0,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(height: 20),
-                      GlassmorphicContainer(
-                        width: double.infinity,
-                        height: 80,
-                        borderRadius: 20,
-                        blur: 10,
-                        alignment: Alignment.center,
-                        border: 2,
-                        linearGradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            Color(0xFFffffff).withOpacity(0.2),
-                            Color(0xFFFFFFFF).withOpacity(0.2),
-                          ],
-                        ),
-                        borderGradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            Color(0xFFffffff).withOpacity(0.5),
-                            Color((0xFFFFFFFF)).withOpacity(0.5),
-                          ],
-                        ),
-                        child: Row(
+                      Container(
+                        color: Colors
+                            .white, // Set the background color of the Column to white
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            Expanded(
-                              child: Container(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
+                            _buildSourceSection(),
+
+                            _buildDepartmentSection(),
+                            _buildSpeciesSection(),
+                            _buildAgeSection(),
+
+                            _buildOPDNumberSection(),
+
+                            _buildSexSection(),
+
+                            _buildBodyWeightSection(),
+
+                            _buildTemperatureSection(),
+
+                            _buildHeartRateSection(),
+
+                            _buildPulseRateSection(),
+
+                            _buildVaccinationSection(),
+
+                            _buildDewormingSection(),
+
+                            _buildSymptomsSection(),
+
+                            _buildTreatmentSection(),
+                            _buildAdviceSection(),
+
+                            // Conditionally add the Row for pregnancy based on showPregnancyOption
+                            if (showPregnancyOption) ...[
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12.0, vertical: 8.0),
+                                decoration: BoxDecoration(
+                                  color: CupertinoColors
+                                      .lightBackgroundGray, // You can customize the background color here
+                                  borderRadius: BorderRadius.circular(
+                                      8.0), // Adjust the radius for the rounded corners
+                                ),
+                                child: Row(
                                   children: [
-                                    Text(
-                                      'Kilograms',
-                                      textAlign: TextAlign.center,
-                                    ),
-                                    TextFormField(
+                                    CupertinoSwitch(
+                                      value: isPregnant,
                                       onChanged: (value) {
-                                        // Validate and update the body weight in kilograms
-                                        if (value.isEmpty ||
-                                            double.tryParse(value) == null) {
-                                          // Invalid input, set bodyWeightKg to null or any default value
-                                          setState(() {
-                                            bodyWeightKg = null;
-                                          });
-                                        } else {
-                                          // Valid input, parse the value as a double and assign it to bodyWeightKg
-                                          setState(() {
-                                            bodyWeightKg = double.parse(value);
-                                          });
+                                        setState(() {
+                                          isPregnant = value;
+                                        });
+                                        if (isPregnant) {
+                                          _openPregnancyDialog();
                                         }
                                       },
-                                      keyboardType:
-                                          TextInputType.numberWithOptions(
-                                              decimal: true),
-                                      inputFormatters: [
-                                        FilteringTextInputFormatter.allow(RegExp(
-                                            r'[0-9.]')), // Only allow numbers and dot
-                                      ],
-                                      decoration: InputDecoration(
-                                        labelText: '',
-                                        contentPadding:
-                                            EdgeInsets.symmetric(vertical: 8.0),
+                                    ),
+                                    const Text(
+                                      'Pregnant',
+                                      style: TextStyle(
+                                        fontSize: 16.0,
+                                        color: CupertinoColors
+                                            .black, // You can customize the text color here
                                       ),
                                     ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            SizedBox(width: 10),
-                            Expanded(
-                              child: Container(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      'Grams',
-                                      textAlign: TextAlign.center,
-                                    ),
-                                    TextFormField(
-                                      onChanged: (value) {
-                                        // Validate and update the body weight in grams
-                                        if (value.isEmpty ||
-                                            int.tryParse(value) == null) {
-                                          // Invalid input, set bodyWeightGm to null or any default value
-                                          setState(() {
-                                            bodyWeightGm = null;
-                                          });
-                                        } else {
-                                          // Valid input, parse the value as an integer and assign it to bodyWeightGm
-                                          setState(() {
-                                            bodyWeightGm = int.parse(value);
-                                          });
-                                        }
-                                      },
-                                      keyboardType:
-                                          TextInputType.numberWithOptions(
-                                              decimal: true),
-                                      inputFormatters: [
-                                        FilteringTextInputFormatter.allow(RegExp(
-                                            r'[0-9]')), // Only allow numbers
-                                      ],
-                                      decoration: InputDecoration(
-                                        labelText: '',
-                                        contentPadding:
-                                            EdgeInsets.symmetric(vertical: 8.0),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      SizedBox(height: 20),
-                      Text(
-                        'Body Weight: ${((bodyWeightKg ?? 0) + (bodyWeightGm ?? 0) / 1000).toStringAsFixed(2)} kg',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 20.0,
-                        ),
-                      ),
-                      SizedBox(height: 20),
-                      GlassmorphicContainer(
-                        width: double.infinity,
-                        height: 80,
-                        borderRadius: 20,
-                        blur: 10,
-                        alignment: Alignment.center,
-                        border: 2,
-                        linearGradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            Color(0xFFffffff).withOpacity(0.2),
-                            Color(0xFFFFFFFF).withOpacity(0.2),
-                          ],
-                        ),
-                        borderGradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            Color(0xFFffffff).withOpacity(0.5),
-                            Color((0xFFFFFFFF)).withOpacity(0.5),
-                          ],
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              flex: 3,
-                              child: Container(
-                                width: temperatureWidth,
-                                child: TextFormField(
-                                  onChanged: (value) {
-                                    setState(() {
-                                      temperature = value;
-                                    });
-                                  },
-                                  keyboardType: TextInputType.number,
-                                  decoration: InputDecoration(
-                                    labelText: 'Temperature',
-                                    contentPadding:
-                                        EdgeInsets.symmetric(vertical: 8.0),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            SizedBox(width: 10),
-                            Flexible(
-                              flex: 1,
-                              child: GestureDetector(
-                                onTap: () {
-                                  showUnitDropdown = true;
-                                  showCupertinoModalPopup(
-                                    context: context,
-                                    builder: (BuildContext context) {
-                                      return Container(
-                                        height: 200,
-                                        color: Colors.white,
-                                        child: Column(
-                                          children: [
-                                            CupertinoPicker(
-                                              itemExtent: 32.0,
-                                              onSelectedItemChanged:
-                                                  (selectedIndex) {
-                                                setState(() {
-                                                  unit = units[selectedIndex];
-                                                  showUnitDropdown = false;
-                                                });
-                                              },
-                                              children: units
-                                                  .map((unit) => Text(unit))
-                                                  .toList(),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: GestureDetector(
+                                        onTap: () {
+                                          _openPregnancyDialog();
+                                        },
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                              vertical: 8.0),
+                                          child: Text(
+                                            pregnancyController.text.isNotEmpty
+                                                ? pregnancyController.text
+                                                : 'Select Pregnancy Duration',
+                                            style: TextStyle(
+                                              fontSize: 16.0,
+                                              color: pregnancyController
+                                                      .text.isNotEmpty
+                                                  ? CupertinoColors.black
+                                                  : CupertinoColors.systemGrey,
                                             ),
-                                          ],
+                                          ),
                                         ),
-                                      );
-                                    },
-                                  );
-                                },
-                                child: Container(
-                                  width: unitWidth,
-                                  child: Text(
-                                    unit.isNotEmpty ? unit : 'Select Unit',
-                                    style: TextStyle(color: Colors.black),
-                                  ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                            ),
+                            ],
                           ],
                         ),
                       ),
-                      SizedBox(height: 20),
+
+                      // End of the Row for pregnancy
+
+                      const SizedBox(height: 20),
+
                       Center(
-                        child: Text(
-                          'Temperature: $temperature $unit',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 20.0,
-                          ),
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Map<String, dynamic> formData = {
+                              'selectedDate': selectedDate,
+                              'selectedSource': selectedSource,
+                              'selectedDepartment': selectedDepartment,
+                              'selectedSpecies': selectedSpecies,
+                              'opdNumber': opdNumber,
+                              'sex': sex,
+                              'bodyWeightKg': bodyWeightKg,
+                              'bodyWeightGm': bodyWeightGm,
+                              'temperature': temperature,
+                              'unit': unit,
+                              'heartRate': heartRate,
+                              'pulseRate': pulseRate,
+                              'hasVaccination': hasVaccination,
+                              'vaccinationDate': vaccinationDate,
+                              'hasDeworming': hasDeworming,
+                              'dewormingDate': dewormingDate,
+                              'symptoms': symptoms,
+                              'treatments': treatments,
+                              'advice': advice,
+                              'isPregnant': isPregnant,
+                              'pregnancyDuration': pregnancyDuration,
+                            };
+
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    PreprocessScreen(formData: formData),
+                              ),
+                            );
+                          },
+                          child: const Text('Submit'),
                         ),
                       ),
-                      SizedBox(height: 30),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: GlassmorphicContainer(
-                              width: MediaQuery.of(context).size.width * 0.7,
-                              height: MediaQuery.of(context).size.height * 0.2,
-                              borderRadius: 20,
-                              blur: 20,
-                              alignment: Alignment.bottomCenter,
-                              border: 2,
-                              linearGradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  Color(0xFFffffff).withOpacity(0.1),
-                                  Color(0xFFFFFFFF).withOpacity(0.05),
-                                ],
-                                stops: [
-                                  0.1,
-                                  1,
-                                ],
-                              ),
-                              borderGradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  Color(0xFFffffff).withOpacity(0.5),
-                                  Color((0xFFFFFFFF)).withOpacity(0.5),
-                                ],
-                              ),
-                              child: Padding(
-                                padding: EdgeInsets.all(16),
-                                child: Column(
-                                  children: [
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text(
-                                          'Heart Rate',
-                                          style: TextStyle(
-                                            fontSize: 18.0,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        GestureDetector(
-                                          onTap: () {
-                                            setState(() {
-                                              heartRate = '';
-                                            });
-                                          },
-                                          child: Text(
-                                            'Reset',
-                                            style: TextStyle(
-                                              fontSize: 14.0,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    SizedBox(height: 8),
-                                    GestureDetector(
-                                      onTap: () {
-                                        setState(() {
-                                          showHeartRatePicker = true;
-                                          showPulseRatePicker = false;
-                                        });
-                                        _showHeartRatePicker();
-                                      },
-                                      child: Text(
-                                        heartRate.isNotEmpty
-                                            ? heartRate
-                                            : 'Select Heart Rate',
-                                      ),
-                                    ),
-                                    if (showHeartRatePicker)
-                                      CupertinoPicker(
-                                        itemExtent: 32.0,
-                                        onSelectedItemChanged: (selectedIndex) {
-                                          setState(() {
-                                            if (selectedIndex == 0) {
-                                              heartRate = 'None';
-                                            } else {
-                                              heartRate = (selectedIndex + 29)
-                                                  .toString();
-                                            }
-                                            showHeartRatePicker = false;
-                                          });
-                                        },
-                                        children: [
-                                          Text('None'),
-                                          ...List<Widget>.generate(121,
-                                              (index) {
-                                            return Text(
-                                                '${index + 30} beats per minute');
-                                          }),
-                                        ],
-                                      ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                          SizedBox(width: 16),
-                          Expanded(
-                            child: GlassmorphicContainer(
-                              width: MediaQuery.of(context).size.width * 0.7,
-                              height: MediaQuery.of(context).size.height * 0.2,
-                              borderRadius: 20,
-                              blur: 20,
-                              alignment: Alignment.bottomCenter,
-                              border: 2,
-                              linearGradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  Color(0xFFffffff).withOpacity(0.1),
-                                  Color(0xFFFFFFFF).withOpacity(0.05),
-                                ],
-                                stops: [
-                                  0.1,
-                                  1,
-                                ],
-                              ),
-                              borderGradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  Color(0xFFffffff).withOpacity(0.5),
-                                  Color((0xFFFFFFFF)).withOpacity(0.5),
-                                ],
-                              ),
-                              child: Padding(
-                                padding: EdgeInsets.all(16),
-                                child: Column(
-                                  children: [
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text(
-                                          'Pulse Rate',
-                                          style: TextStyle(
-                                            fontSize: 18.0,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        GestureDetector(
-                                          onTap: () {
-                                            setState(() {
-                                              pulseRate = '';
-                                            });
-                                          },
-                                          child: Text(
-                                            'Reset',
-                                            style: TextStyle(
-                                              fontSize: 14.0,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    SizedBox(height: 8),
-                                    GestureDetector(
-                                      onTap: () {
-                                        setState(() {
-                                          showPulseRatePicker = true;
-                                          showHeartRatePicker = false;
-                                        });
-                                        _showPulseRatePicker();
-                                      },
-                                      child: Text(
-                                        pulseRate.isNotEmpty
-                                            ? pulseRate
-                                            : 'Select Pulse Rate',
-                                      ),
-                                    ),
-                                    if (showPulseRatePicker)
-                                      CupertinoPicker(
-                                        itemExtent: 32.0,
-                                        onSelectedItemChanged: (selectedIndex) {
-                                          setState(() {
-                                            if (selectedIndex == 0) {
-                                              pulseRate = 'None';
-                                            } else {
-                                              pulseRate = (selectedIndex + 29)
-                                                  .toString();
-                                            }
-                                            showPulseRatePicker = false;
-                                          });
-                                        },
-                                        children: [
-                                          Text('None'),
-                                          ...List<Widget>.generate(121,
-                                              (index) {
-                                            return Text(
-                                                '${index + 30} per minute');
-                                          }),
-                                        ],
-                                      ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      Column(
-                        children: [
-                          Row(
-                            children: [
-                              Checkbox(
-                                value: hasVaccination,
-                                onChanged: (value) {
-                                  setState(() {
-                                    hasVaccination = value!;
-                                  });
-                                },
-                              ),
-                              Text('Vaccination'),
-                              SizedBox(width: 10),
-                              if (hasVaccination)
-                                Expanded(
-                                  child: InkWell(
-                                    onTap: () async {
-                                      final selectedDate = await showDatePicker(
-                                        context: context,
-                                        initialDate: DateTime.now(),
-                                        firstDate: DateTime(2022),
-                                        lastDate: DateTime.now(),
-                                      );
-                                      setState(() {
-                                        this.vaccinationDate = selectedDate;
-                                      });
-                                    },
-                                    child: InputDecorator(
-                                      decoration: InputDecoration(
-                                        labelText: 'Date',
-                                      ),
-                                      child: Text(
-                                        vaccinationDate != null
-                                            ? '${vaccinationDate?.year}-${vaccinationDate?.month}-${vaccinationDate?.day}'
-                                            : 'Select Date',
-                                        style: TextStyle(
-                                          color: vaccinationDate != null
-                                              ? Colors.black
-                                              : Colors.grey[700],
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                          Row(
-                            children: [
-                              Checkbox(
-                                value: hasDeworming,
-                                onChanged: (value) {
-                                  setState(() {
-                                    hasDeworming = value!;
-                                  });
-                                },
-                              ),
-                              Text('Deworming'),
-                              SizedBox(width: 10),
-                              if (hasDeworming)
-                                Expanded(
-                                  child: InkWell(
-                                    onTap: () async {
-                                      final selectedDate = await showDatePicker(
-                                        context: context,
-                                        initialDate: DateTime.now(),
-                                        firstDate: DateTime(2022),
-                                        lastDate: DateTime.now(),
-                                      );
-                                      setState(() {
-                                        this.dewormingDate = selectedDate;
-                                      });
-                                    },
-                                    child: InputDecorator(
-                                      decoration: InputDecoration(
-                                        labelText: 'Date',
-                                      ),
-                                      child: Text(
-                                        dewormingDate != null
-                                            ? '${dewormingDate?.year}-${dewormingDate?.month}-${dewormingDate?.day}'
-                                            : 'Select Date',
-                                        style: TextStyle(
-                                          color: dewormingDate != null
-                                              ? Colors.black
-                                              : Colors.grey[700],
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                          TextFormField(
-                            onChanged: (value) {
-                              symptoms = value;
-                            },
-                            decoration: InputDecoration(
-                              labelText: 'Symptoms',
-                            ),
-                          ),
-                          GestureDetector(
-                            onTap: () {
-                              showDialog(
-                                context: context,
-                                builder: (BuildContext context) {
-                                  return TreatmentDialog(
-                                    onTreatmentSelected:
-                                        handleTreatmentSelected,
-                                    previousTreatments: treatments,
-                                  );
-                                },
-                              );
-                            },
-                            child: TextFormField(
-                              enabled: false,
-                              controller: treatmentController,
-                              maxLines: null,
-                              decoration: InputDecoration(
-                                labelText: 'Treatment',
-                              ),
-                            ),
-                          ),
-                          TextFormField(
-                            onChanged: (value) {
-                              advice = value;
-                            },
-                            decoration: InputDecoration(
-                              labelText: 'Advice',
-                            ),
-                          ),
-                          if (showPregnancyOption)
-                            Row(
-                              children: [
-                                Checkbox(
-                                  value: isPregnant,
-                                  onChanged: (value) {
-                                    setState(() {
-                                      isPregnant = value!;
-                                    });
-                                  },
-                                ),
-                                Text('Pregnant'),
-                                SizedBox(width: 10),
-                                Expanded(
-                                  child: InkWell(
-                                    onTap: () {
-                                      showDialog(
-                                        context: context,
-                                        builder: (context) => AlertDialog(
-                                          title: Text('Pregnancy Duration'),
-                                          content: Column(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment
-                                                        .spaceEvenly,
-                                                children: [
-                                                  Expanded(
-                                                    child:
-                                                        DropdownButtonFormField<
-                                                            int>(
-                                                      value:
-                                                          null, // Update initial value to null
-                                                      onChanged: (newValue) {
-                                                        setState(() {
-                                                          pregnancyDays =
-                                                              newValue!;
-                                                        });
-                                                      },
-                                                      items: List.generate(
-                                                        31,
-                                                        (index) =>
-                                                            DropdownMenuItem<
-                                                                int>(
-                                                          value: index + 1,
-                                                          child: Text(
-                                                              (index + 1)
-                                                                  .toString()),
-                                                        ),
-                                                      ).toList(),
-                                                      decoration:
-                                                          InputDecoration(
-                                                        labelText: 'Days',
-                                                        hintText: 'Select days',
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  SizedBox(width: 8),
-                                                  Expanded(
-                                                    child:
-                                                        DropdownButtonFormField<
-                                                            int>(
-                                                      value:
-                                                          null, // Update initial value to null
-                                                      onChanged: (newValue) {
-                                                        setState(() {
-                                                          pregnancyMonths =
-                                                              newValue!;
-                                                        });
-                                                      },
-                                                      items: List.generate(
-                                                        12,
-                                                        (index) =>
-                                                            DropdownMenuItem<
-                                                                int>(
-                                                          value: index + 1,
-                                                          child: Text(
-                                                              (index + 1)
-                                                                  .toString()),
-                                                        ),
-                                                      ).toList(),
-                                                      decoration:
-                                                          InputDecoration(
-                                                        labelText: 'Months',
-                                                        hintText:
-                                                            'Select months',
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  SizedBox(width: 8),
-                                                  Expanded(
-                                                    child:
-                                                        DropdownButtonFormField<
-                                                            int>(
-                                                      value:
-                                                          null, // Update initial value to null
-                                                      onChanged: (newValue) {
-                                                        setState(() {
-                                                          pregnancyYears =
-                                                              newValue!;
-                                                        });
-                                                      },
-                                                      items: List.generate(
-                                                        5,
-                                                        (index) =>
-                                                            DropdownMenuItem<
-                                                                int>(
-                                                          value: index + 1,
-                                                          child: Text(
-                                                              (index + 1)
-                                                                  .toString()),
-                                                        ),
-                                                      ).toList(),
-                                                      decoration:
-                                                          InputDecoration(
-                                                        labelText: 'Years',
-                                                        hintText:
-                                                            'Select years',
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                              SizedBox(height: 16),
-                                              ElevatedButton(
-                                                onPressed: () {
-                                                  setState(() {
-                                                    pregnancyDuration =
-                                                        '$pregnancyYears years $pregnancyMonths months $pregnancyDays days';
-                                                    pregnancyController.text =
-                                                        pregnancyDuration;
-                                                  });
-                                                  Navigator.pop(context, {
-                                                    'days': pregnancyDays,
-                                                    'months': pregnancyMonths,
-                                                    'years': pregnancyYears,
-                                                  });
-                                                },
-                                                child: Text('Save'),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ).then((value) {
-                                        setState(() {
-                                          pregnancyMonths = value['months'];
 
-                                          if (value['years'] != 0) {
-                                            pregnancyYears = value['years'];
-                                            pregnancyDuration =
-                                                '$pregnancyYears years ';
-                                          } else {
-                                            pregnancyDuration = '';
-                                          }
-
-                                          if (value['months'] != 0) {
-                                            pregnancyDuration +=
-                                                '$pregnancyMonths months ';
-                                          }
-
-                                          if (value['days'] != 0) {
-                                            pregnancyDays = value['days'];
-                                            pregnancyDuration +=
-                                                '$pregnancyDays days';
-                                          }
-
-                                          pregnancyController.text =
-                                              pregnancyDuration;
-                                        });
-                                      });
-                                    },
-                                    child: TextFormField(
-                                      enabled: false,
-                                      decoration: InputDecoration(
-                                        labelText: 'Pregnancy',
-                                        hintText: 'Select Pregnancy Duration',
-                                      ),
-                                      controller: pregnancyController,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                        ],
-                      ),
-                      ElevatedButton(
-                        onPressed: () {
-                          Map<String, dynamic> formData = {
-                            'selectedDate': selectedDate,
-                            'selectedSource': selectedSource,
-                            'selectedDepartment': selectedDepartment,
-                            'selectedSpecies': selectedSpecies,
-                            'opdNumber': opdNumber,
-                            'sex': sex,
-                            'bodyWeightKg': bodyWeightKg,
-                            'bodyWeightGm': bodyWeightGm,
-                            'temperature': temperature,
-                            'heartRate': heartRate,
-                            'pulseRate': pulseRate,
-                            'hasVaccination': hasVaccination,
-                            'vaccinationDate': vaccinationDate,
-                            'hasDeworming': hasDeworming,
-                            'dewormingDate': dewormingDate,
-                            'symptoms': symptoms,
-                            'treatments': treatments,
-                            'advice': advice,
-                            'isPregnant': isPregnant,
-                            'pregnancyDuration': pregnancyDuration,
-                          };
-
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  PreprocessScreen(formData: formData),
-                            ),
-                          );
-                        },
-                        child: Text('Submit'),
-                      ),
-                      MyFloatingActionButton(
-                        onResetPressed: _resetForm,
-                        opdNumber: opdNumber,
-                        species: selectedSpecies,
+                      Align(
+                        alignment: Alignment.bottomLeft,
+                        child: MyFloatingActionButton(
+                          onResetPressed: _resetForm,
+                          opdNumber: opdNumber,
+                          species: selectedSpecies,
+                        ),
                       ),
                     ],
                   ),
                 ),
               ),
             ),
-          ],
+          ),
         ),
       ),
     );
   }
-}
 
-void main() {
-  runApp(MaterialApp(
-    home: MyForm(),
-  ));
+  void main() {
+    runApp(MaterialApp(
+      home: MyForm(),
+    ));
+  }
 }
