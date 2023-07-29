@@ -19,7 +19,8 @@ class MedicationFormApp extends StatelessWidget {
     return MaterialApp(
       title: 'Medication Form',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        primaryColor: Color.fromARGB(
+            255, 0, 64, 221), // Set your desired active color here
       ),
       home: MedicationFormScreen(),
     );
@@ -31,7 +32,12 @@ class MedicationFormScreen extends StatefulWidget {
   _MedicationFormScreenState createState() => _MedicationFormScreenState();
 }
 
+// Controllers for dosage and body weight fields
+List<TextEditingController> dosageControllers = [];
+List<TextEditingController> bodyWeightControllers = [];
+
 class _MedicationFormScreenState extends State<MedicationFormScreen> {
+  String _selectedCategory = '';
   final _formKey = GlobalKey<FormState>();
   final _nameFocusNode = FocusNode();
   bool _showReconstitution = false;
@@ -103,6 +109,10 @@ class _MedicationFormScreenState extends State<MedicationFormScreen> {
   List<Map<String, dynamic>> dosageList = [];
   List<Map<String, dynamic>> medicationList = [];
 
+  List<TextEditingController> nameControllers = [];
+  List<TextEditingController> presentationControllers = [];
+  List<TextEditingController> concentrationControllers = [];
+
   @override
   void dispose() {
     _nameFocusNode.dispose();
@@ -122,12 +132,21 @@ class _MedicationFormScreenState extends State<MedicationFormScreen> {
   void _processData(BuildContext context) {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
+
+      // Save dosage data from controllers to dosageList
+      for (int i = 0; i < dosageControllers.length; i++) {
+        dosageList[i]['dosage'] = dosageControllers[i].text;
+        dosageList[i]['bodyWeight'] = bodyWeightControllers[i].text;
+      }
+
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => ProcessDosageScreen(
             dosageList: dosageList,
             medicationList: medicationList,
+            category: _selectedCategory, // Pass the selected category here
+            name: _nameTextController.text, // Pass the entered name here
           ),
         ),
       );
@@ -230,6 +249,11 @@ class _MedicationFormScreenState extends State<MedicationFormScreen> {
       'reconstitutionUnit': null,
       'image': null, // Add 'image' field to each medication entry
     });
+
+    // Initialize the controllers for the newly added medication row
+    nameControllers.add(TextEditingController());
+    presentationControllers.add(TextEditingController());
+    concentrationControllers.add(TextEditingController());
   }
 
   void _showImageSelectionDialog(int index) async {
@@ -334,8 +358,12 @@ class _MedicationFormScreenState extends State<MedicationFormScreen> {
   Widget _buildCategoryField() {
     return DropdownButtonFormField<String>(
       decoration: InputDecoration(labelText: 'Category'),
-      value: '',
-      onChanged: (value) {},
+      value: _selectedCategory, // Use the selected category here
+      onChanged: (value) {
+        setState(() {
+          _selectedCategory = value!; // Update the selected category
+        });
+      },
       items: [
         DropdownMenuItem(
           value: '',
@@ -385,391 +413,475 @@ class _MedicationFormScreenState extends State<MedicationFormScreen> {
     );
   }
 
-  Widget build(BuildContext context) {
-    // Get the screen size using media queries
-    final mediaQueryData = MediaQuery.of(context);
-    final screenWidth = mediaQueryData.size.width;
-    final screenHeight = mediaQueryData.size.height;
+  Widget _buildDosageTable() {
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: NeverScrollableScrollPhysics(),
+      itemCount: dosageList.length,
+      itemBuilder: (context, index) {
+        // Initialize controllers for each row
+        if (dosageControllers.length <= index) {
+          dosageControllers.add(TextEditingController());
+        }
+        if (bodyWeightControllers.length <= index) {
+          bodyWeightControllers.add(TextEditingController());
+        }
 
-    // Calculate the dynamic size by multiplying with 0.9 (90%)
-    final dynamicWidth = screenWidth * 0.9;
-    final dynamicHeight = screenHeight * 0.9;
-
-    // Calculate the dynamic text size based on the screen width
-    final dynamicTextSize = screenWidth * 0.02;
-
-    return CupertinoPageScaffold(
-      navigationBar: CupertinoNavigationBar(
-        middle: Text(
-          'Medication Form',
-          style: TextStyle(
-            fontSize: screenWidth * 0.03,
-            color: Colors.black,
-            decoration: TextDecoration.none,
-          ),
-        ),
-      ),
-      child: ListView(
-        children: [
-          Padding(
-            padding: EdgeInsets.all(16.0),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildCategoryField(),
-                  SizedBox(height: 16.0),
-                  TextFormField(
-                    decoration: InputDecoration(labelText: 'Name'),
-                    focusNode: _nameFocusNode,
-                    controller: _nameTextController,
-                  ),
-                  SizedBox(height: 16.0),
-                  SizedBox(height: 16.0),
-                  Text(
-                    'Dose Rate:',
-                    style: TextStyle(
-                      fontSize: dynamicTextSize,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                      decoration: TextDecoration.none,
-                    ),
-                  ),
-                  SizedBox(height: 8.0),
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: DataTable(
-                      columnSpacing: 16.0,
-                      columns: [
-                        DataColumn(label: Text('Species')),
-                        DataColumn(label: Text('Dosage')),
-                        DataColumn(label: Text('Unit')),
-                        DataColumn(label: Text('Body Weight')),
-                        DataColumn(label: Text('Weight Unit')),
-                        DataColumn(label: Text('Route of Administration')),
-                        DataColumn(label: Text('Action')),
-                      ],
-                      rows: List.generate(dosageList.length, (index) {
-                        return DataRow(
-                          cells: [
-                            DataCell(
-                              DropdownButtonFormField<String>(
-                                value: dosageList[index]['species'],
-                                onChanged: (value) {
-                                  setState(() {
-                                    dosageList[index]['species'] = value;
-                                  });
-                                },
-                                items: speciesList.map((species) {
-                                  return DropdownMenuItem(
-                                    value: species,
-                                    child: Text(species),
-                                  );
-                                }).toList(),
-                              ),
-                            ),
-                            DataCell(
-                              TextFormField(
-                                decoration: InputDecoration(
-                                  border: InputBorder.none,
-                                  hintText: 'Dosage',
-                                ),
-                                keyboardType: TextInputType.numberWithOptions(
-                                  decimal: true,
-                                ),
-                                onSaved: (value) {
-                                  dosageList[index]['dosage'] = value;
-                                },
-                              ),
-                            ),
-                            DataCell(
-                              DropdownButtonFormField<String>(
-                                value: dosageList[index]['unit'],
-                                onChanged: (value) {
-                                  setState(() {
-                                    dosageList[index]['unit'] = value;
-                                  });
-                                },
-                                items: unitList.map((unit) {
-                                  return DropdownMenuItem(
-                                    value: unit,
-                                    child: Text(unit),
-                                  );
-                                }).toList(),
-                              ),
-                            ),
-                            DataCell(
-                              TextFormField(
-                                decoration: InputDecoration(
-                                  border: InputBorder.none,
-                                  hintText: 'Body Weight',
-                                ),
-                                keyboardType: TextInputType.numberWithOptions(
-                                  decimal: true,
-                                ),
-                                onSaved: (value) {
-                                  dosageList[index]['bodyWeight'] = value;
-                                },
-                              ),
-                            ),
-                            DataCell(
-                              DropdownButtonFormField<String>(
-                                value: dosageList[index]['weightUnit'],
-                                onChanged: (value) {
-                                  setState(() {
-                                    dosageList[index]['weightUnit'] = value;
-                                  });
-                                },
-                                items: weightUnitList.map((unit) {
-                                  return DropdownMenuItem(
-                                    value: unit,
-                                    child: Text(unit),
-                                  );
-                                }).toList(),
-                              ),
-                            ),
-                            DataCell(
-                              DropdownButtonFormField<String>(
-                                value: dosageList[index]['route'],
-                                onChanged: (value) {
-                                  setState(() {
-                                    dosageList[index]['route'] = value;
-                                  });
-                                },
-                                items: routeList.map((route) {
-                                  return DropdownMenuItem(
-                                    value: route,
-                                    child: Text(route),
-                                  );
-                                }).toList(),
-                              ),
-                            ),
-                            DataCell(
-                              IconButton(
-                                icon: Icon(Icons.remove),
-                                onPressed: () {
-                                  setState(() {
-                                    removeDosageRow(index);
-                                  });
-                                },
-                              ),
-                            ),
-                          ],
-                        );
-                      }),
-                    ),
-                  ),
-                  SizedBox(height: 16.0),
-                  CupertinoButton(
-                    onPressed: () {
-                      setState(() {
-                        addDosageRow();
-                      });
-                    },
-                    child: Icon(CupertinoIcons.add),
-                  ),
-                  SizedBox(height: 16.0),
-                  Text(
-                    'Medication details',
-                    style: TextStyle(
-                      fontSize: dynamicTextSize,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                      decoration: TextDecoration.none,
-                    ),
-                  ),
-                  SizedBox(height: 8.0),
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: DataTable(
-                      columnSpacing: 16.0,
-                      columns: [
-                        DataColumn(label: Text('Type')),
-                        DataColumn(label: Text('Name')),
-                        DataColumn(label: Text('Concentration')),
-                        DataColumn(label: Text('Unit')),
-                        DataColumn(label: Text('Presentation')),
-                        DataColumn(label: Text('Unit')),
-                        DataColumn(label: Text('Reconstitution')),
-                        DataColumn(label: Text('Image')),
-                        DataColumn(label: Text('Action')),
-                      ],
-                      rows: List.generate(medicationList.length, (index) {
-                        return DataRow(
-                          cells: [
-                            DataCell(
-                              DropdownButtonFormField<String>(
-                                value: medicationList[index]['type'],
-                                onChanged: (value) {
-                                  setState(() {
-                                    medicationList[index]['type'] = value;
-                                    _showReconstitution =
-                                        value == 'Reconstitutable injectables';
-                                  });
-                                },
-                                items: typeList.map((type) {
-                                  return DropdownMenuItem(
-                                    value: type,
-                                    child: Text(type),
-                                  );
-                                }).toList(),
-                              ),
-                            ),
-                            DataCell(
-                              TextFormField(
-                                decoration: InputDecoration(
-                                  border: InputBorder.none,
-                                  hintText: 'Name',
-                                ),
-                                onSaved: (value) {
-                                  medicationList[index]['name'] = value;
-                                },
-                              ),
-                            ),
-                            DataCell(
-                              TextFormField(
-                                decoration: InputDecoration(
-                                  border: InputBorder.none,
-                                  hintText: 'Concentration',
-                                ),
-                                keyboardType: TextInputType.numberWithOptions(
-                                  decimal: true,
-                                ),
-                                onSaved: (value) {
-                                  medicationList[index]['concentration'] =
-                                      value;
-                                },
-                              ),
-                            ),
-                            DataCell(
-                              DropdownButtonFormField<String>(
-                                value: medicationList[index]['unit'],
-                                onChanged: (value) {
-                                  setState(() {
-                                    medicationList[index]['unit'] = value;
-                                  });
-                                },
-                                items: medUnitList.map((unit) {
-                                  return DropdownMenuItem(
-                                    value: unit,
-                                    child: Text(unit),
-                                  );
-                                }).toList(),
-                              ),
-                            ),
-                            DataCell(
-                              TextFormField(
-                                decoration: InputDecoration(
-                                  border: InputBorder.none,
-                                  hintText: 'Presentation',
-                                ),
-                                keyboardType: TextInputType.numberWithOptions(
-                                  decimal: true,
-                                ),
-                                onSaved: (value) {
-                                  medicationList[index]['presentation'] = value;
-                                },
-                              ),
-                            ),
-                            DataCell(
-                              DropdownButtonFormField<String>(
-                                value: medicationList[index]
-                                    ['presentationUnit'],
-                                onChanged: (value) {
-                                  setState(() {
-                                    medicationList[index]['presentationUnit'] =
-                                        value;
-                                  });
-                                },
-                                items: presentationUnitList.map((unit) {
-                                  return DropdownMenuItem(
-                                    value: unit,
-                                    child: Text(unit),
-                                  );
-                                }).toList(),
-                              ),
-                            ),
-                            DataCell(
-                              Visibility(
-                                visible: _showReconstitution,
-                                child: GestureDetector(
-                                  onTap: () {
-                                    _showReconstitutionDialog(index);
-                                  },
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.edit),
-                                      SizedBox(width: 8.0),
-                                      Text(
-                                        medicationList[index]
-                                                    ['reconstitutionValue'] !=
-                                                null
-                                            ? '${medicationList[index]['reconstitutionValue']} ${medicationList[index]['reconstitutionUnit']}'
-                                            : 'N/A',
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                            DataCell(
-                              GestureDetector(
-                                onTap: () {
-                                  _showImageSelectionDialog(index);
-                                },
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.image),
-                                    SizedBox(width: 8.0),
-                                    Text('Select Image'),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            DataCell(
-                              IconButton(
-                                icon: Icon(Icons.remove),
-                                onPressed: () {
-                                  setState(() {
-                                    removeMedicationRow(index);
-                                  });
-                                },
-                              ),
-                            ),
-                          ],
-
-                          // Conditionally show the reconstitution dialog based on the type of medication
-                          onSelectChanged: (isSelected) {
-                            if (isSelected! &&
-                                medicationList[index]['type'] ==
-                                    'Reconstitutable injectables') {
-                              _showReconstitutionDialog(index);
-                            }
-                          },
-                        );
-                      }),
-                    ),
-                  ),
-                  SizedBox(height: 16.0),
-                  CupertinoButton(
-                    onPressed: () {
-                      setState(() {
-                        addMedicationRow();
-                      });
-                    },
-                    child: Icon(CupertinoIcons.add),
-                  ),
-                  SizedBox(height: 16.0),
-                  ElevatedButton(
-                    onPressed: () => _processData(context),
-                    child: Text('Submit'),
-                  ),
-                ],
+        return Container(
+          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.3),
+                spreadRadius: 2,
+                blurRadius: 4,
+                offset: Offset(0, 2),
               ),
-            ),
+            ],
           ),
-        ],
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ListTile(
+                title: Text(
+                  'Dosage Row ${index + 1}',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                trailing: IconButton(
+                  icon: Icon(Icons.remove, color: Colors.red),
+                  onPressed: () {
+                    setState(() {
+                      removeDosageRow(index);
+                    });
+                  },
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.pets, color: Colors.grey),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            value: dosageList[index]['species'],
+                            onChanged: (value) {
+                              setState(() {
+                                dosageList[index]['species'] = value;
+                              });
+                            },
+                            items: speciesList.map((species) {
+                              return DropdownMenuItem(
+                                value: species,
+                                child: Text(species),
+                              );
+                            }).toList(),
+                            decoration: InputDecoration(labelText: 'Species'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 8),
+                    TextFormField(
+                      controller: dosageControllers[index],
+                      decoration: InputDecoration(
+                        labelText: 'Dosage',
+                        hintText: 'Enter dosage',
+                        prefixIcon:
+                            Icon(Icons.local_hospital, color: Colors.grey),
+                      ),
+                      keyboardType:
+                          TextInputType.text, // Allow text input for ranges
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter a dosage';
+                        }
+
+                        // Regular expression to check if the input matches the required format
+                        RegExp dosagePattern =
+                            RegExp(r'^(\d+(\.\d+)?|\d+-\d+)$');
+
+                        if (!dosagePattern.hasMatch(value)) {
+                          return 'Invalid dosage format. Please use a single number, decimal number, or a range (e.g., 5-10)';
+                        }
+
+                        // You can add additional checks for valid ranges, e.g., check if the range is increasing.
+
+                        return null;
+                      },
+                      onSaved: (value) {
+                        setState(() {
+                          dosageList[index]['dosage'] = value;
+                        });
+                      },
+                    ),
+                    SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(Icons.format_list_numbered, color: Colors.grey),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            value: dosageList[index]['unit'],
+                            onChanged: (value) {
+                              setState(() {
+                                dosageList[index]['unit'] = value;
+                              });
+                            },
+                            items: unitList.map((unit) {
+                              return DropdownMenuItem(
+                                value: unit,
+                                child: Text(unit),
+                              );
+                            }).toList(),
+                            decoration: InputDecoration(labelText: 'Unit'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 8),
+                    TextFormField(
+                      controller: bodyWeightControllers[index],
+                      decoration: InputDecoration(
+                        labelText: 'Body Weight',
+                        hintText: 'Enter body weight',
+                        prefixIcon:
+                            Icon(Icons.accessibility, color: Colors.grey),
+                      ),
+                      keyboardType:
+                          TextInputType.numberWithOptions(decimal: true),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter a body weight';
+                        }
+                        return null;
+                      },
+                      onSaved: (value) {
+                        setState(() {
+                          dosageList[index]['bodyWeight'] = value;
+                        });
+                      },
+                    ),
+                    SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(Icons.line_weight, color: Colors.grey),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            value: dosageList[index]['weightUnit'],
+                            onChanged: (value) {
+                              setState(() {
+                                dosageList[index]['weightUnit'] = value;
+                              });
+                            },
+                            items: weightUnitList.map((unit) {
+                              return DropdownMenuItem(
+                                value: unit,
+                                child: Text(unit),
+                              );
+                            }).toList(),
+                            decoration:
+                                InputDecoration(labelText: 'Weight Unit'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(Icons.location_on, color: Colors.grey),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            value: dosageList[index]['route'],
+                            onChanged: (value) {
+                              setState(() {
+                                dosageList[index]['route'] = value;
+                              });
+                            },
+                            items: routeList.map((route) {
+                              return DropdownMenuItem(
+                                value: route,
+                                child: Text(route),
+                              );
+                            }).toList(),
+                            decoration: InputDecoration(
+                              labelText: 'Route of Administration',
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildMedicationTable() {
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: NeverScrollableScrollPhysics(),
+      itemCount: medicationList.length,
+      itemBuilder: (context, index) {
+        // Initialize the controllers for each medication row
+        if (nameControllers.length <= index) {
+          nameControllers.add(TextEditingController());
+        }
+        if (presentationControllers.length <= index) {
+          presentationControllers.add(TextEditingController());
+        }
+        if (concentrationControllers.length <= index) {
+          concentrationControllers.add(TextEditingController());
+        }
+
+        return Container(
+          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.3),
+                spreadRadius: 2,
+                blurRadius: 4,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ListTile(
+                title: Text(
+                  'Medication Row ${index + 1}',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                trailing: IconButton(
+                  icon: Icon(Icons.remove, color: Colors.red),
+                  onPressed: () {
+                    setState(() {
+                      removeMedicationRow(index);
+                    });
+                  },
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    DropdownButtonFormField<String>(
+                      value: medicationList[index]['type'],
+                      onChanged: (value) {
+                        setState(() {
+                          medicationList[index]['type'] = value;
+                          _showReconstitution =
+                              value == 'Reconstitutable injectables';
+                        });
+                      },
+                      items: typeList.map((type) {
+                        return DropdownMenuItem(
+                          value: type,
+                          child: Text(type),
+                        );
+                      }).toList(),
+                      decoration: InputDecoration(labelText: 'Type'),
+                    ),
+                    SizedBox(height: 8),
+                    TextFormField(
+                      controller: nameControllers[index], // Use the controller
+                      decoration: InputDecoration(
+                        labelText: 'Name',
+                        hintText: 'Enter name',
+                        prefixIcon:
+                            Icon(Icons.medical_services, color: Colors.grey),
+                      ),
+                      onSaved: (value) {
+                        medicationList[index]['name'] = value;
+                      },
+                    ),
+                    SizedBox(height: 8),
+                    TextFormField(
+                      controller:
+                          concentrationControllers[index], // Use the controller
+                      decoration: InputDecoration(
+                        labelText: 'Concentration',
+                        hintText: 'Enter concentration',
+                        prefixIcon:
+                            Icon(Icons.format_color_reset, color: Colors.grey),
+                      ),
+                      keyboardType:
+                          TextInputType.numberWithOptions(decimal: true),
+                      onSaved: (value) {
+                        medicationList[index]['concentration'] = value;
+                      },
+                    ),
+                    SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(Icons.track_changes, color: Colors.grey),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            value: medicationList[index]['unit'],
+                            onChanged: (value) {
+                              setState(() {
+                                medicationList[index]['unit'] = value;
+                              });
+                            },
+                            items: medUnitList.map((unit) {
+                              return DropdownMenuItem(
+                                value: unit,
+                                child: Text(unit),
+                              );
+                            }).toList(),
+                            decoration: InputDecoration(
+                                labelText: 'Concentration Unit'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 8),
+                    TextFormField(
+                      controller:
+                          presentationControllers[index], // Use the controller
+                      decoration: InputDecoration(
+                        labelText: 'Presentation',
+                        hintText: 'Enter presentation',
+                        prefixIcon:
+                            Icon(Icons.local_pharmacy, color: Colors.grey),
+                      ),
+                      keyboardType:
+                          TextInputType.numberWithOptions(decimal: true),
+                      onSaved: (value) {
+                        medicationList[index]['presentation'] = value;
+                      },
+                    ),
+                    SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(Icons.line_weight, color: Colors.grey),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            value: medicationList[index]['presentationUnit'],
+                            onChanged: (value) {
+                              setState(() {
+                                medicationList[index]['presentationUnit'] =
+                                    value;
+                              });
+                            },
+                            items: medUnitList.map((unit) {
+                              return DropdownMenuItem(
+                                value: unit,
+                                child: Text(unit),
+                              );
+                            }).toList(),
+                            decoration:
+                                InputDecoration(labelText: 'Presentation Unit'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 8),
+                    if (_showReconstitution)
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Reconstitution: ${medicationList[index]['reconstitutionValue'] != null ? '${medicationList[index]['reconstitutionValue']} ${medicationList[index]['reconstitutionUnit']}' : 'N/A'}',
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () => _showReconstitutionDialog(index),
+                            child: Text('Edit'),
+                          ),
+                        ],
+                      ),
+                    SizedBox(height: 8),
+                    if (medicationList[index]['image'] != null)
+                      Container(
+                        height: 100,
+                        width: 100,
+                        child: kIsWeb
+                            ? Image.memory(medicationList[index]['image'])
+                            : Image.file(medicationList[index]['image']),
+                      ),
+                    SizedBox(height: 8),
+                    ElevatedButton(
+                      onPressed: () => _showImageSelectionDialog(index),
+                      child: Text('Select Image'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: CupertinoNavigationBar(
+        middle: Text('Medication Form'),
+      ),
+      body: Form(
+        key: _formKey,
+        child: ListView(
+          padding: EdgeInsets.all(16.0),
+          children: [
+            _buildCategoryField(),
+            SizedBox(height: 16.0),
+            _buildNameField(),
+            _isNameAvailable != null && !_isNameAvailable!
+                ? Text(
+                    'The medication name already exists.',
+                    style: TextStyle(color: Colors.red),
+                  )
+                : SizedBox(),
+            SizedBox(height: 16.0),
+            Text('Dosage:'),
+            _buildDosageTable(),
+            CupertinoButton(
+              onPressed: () {
+                setState(() {
+                  addDosageRow();
+                });
+              },
+              child: Icon(CupertinoIcons.add_circled),
+            ),
+            SizedBox(height: 16.0),
+            Text('Medication:'),
+            _buildMedicationTable(),
+            CupertinoButton(
+              onPressed: () {
+                setState(() {
+                  addMedicationRow();
+                });
+              },
+              child: Icon(CupertinoIcons.add_circled),
+            ),
+            SizedBox(height: 16.0),
+            CupertinoButton.filled(
+              onPressed: () => _processData(context),
+              child: Text('Submit'),
+            ),
+          ],
+        ),
       ),
     );
   }

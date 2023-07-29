@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'medicine/view.dart';
 
 void main() {
   runApp(MedicalPortalApp());
@@ -85,8 +86,11 @@ class _MedicalPortalHomePageState extends State<MedicalPortalHomePage>
       ),
     ).then((value) {
       if (value == 'admin') {
-        // Add your logic here for the admin menu option
-        // For example, Navigator.pushNamed(context, '/admin_login');
+        // Navigate to the ViewScreen when 'Admin' is selected
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => ViewScreen()),
+        );
       } else if (value == 'terms') {
         // Add your logic here for the terms menu option
         // For example, _showTermsAndConditionsDialog(context);

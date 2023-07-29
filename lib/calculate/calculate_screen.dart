@@ -66,18 +66,52 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
         'Body Weight: ${result['body_weight']} kg\n'
         'Medications:\n';
 
+// Function to round the volume or volume range to the nearest tenth
+    String roundVolume(String volume) {
+      try {
+        var volumes = volume.split('-'); // Split the volume range by hyphen '-'
+        var parsedVolumes = volumes.map((v) => double.parse(v)).toList();
+        var roundedVolumes =
+            parsedVolumes.map((v) => (v * 10).floorToDouble() / 10).toList();
+        return roundedVolumes
+            .join(' - '); // Join the rounded volumes with a hyphen
+      } catch (e) {
+        return volume;
+      }
+    }
+
+// Loop through each medication in the 'medications' list
     for (var medication in result['medications']) {
+      // Add medication name
       formattedResult += '- Medication: ${medication['name']}';
 
+      // Check the medication type and add relevant information
       if (medication.containsKey('tablets_range')) {
+        // For tablet-type medications
         formattedResult += '\n  Type: Tab';
         formattedResult +=
             '\n  Tablets Range: ${medication['tablets_range']} tablets';
       } else if (medication.containsKey('type')) {
-        formattedResult += '\n  Type: ${medication['type']}';
+        var lowerCaseType = medication['type'].toLowerCase();
+        // For other medication types
+        formattedResult += '\n  Type: $lowerCaseType';
 
-        if (medication['type'] == 'Reconstitutable injectables' ||
-            medication['type'] == 'Reconstitutable solution') {
+        if (lowerCaseType == 'inj' || lowerCaseType == 'vial') {
+          // For 'inj' or 'vial'
+          if (medication.containsKey('volume')) {
+            var volume = medication['volume'];
+            var isRange = volume.contains('-');
+            if (isRange) {
+              formattedResult += '\n  Volume Range: $volume';
+            } else {
+              formattedResult += '\n  Volume: ${roundVolume(volume)}';
+            }
+          } else {
+            formattedResult += '\n  Volume: Not specified';
+          }
+        } else if (lowerCaseType == 'reconstitutable injectables' ||
+            lowerCaseType == 'reconstitutable solution') {
+          // For 'Reconstitutable injectables' or 'Reconstitutable solution'
           formattedResult +=
               '\n  Concentration: ${medication['concentration']}';
 
@@ -85,18 +119,10 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
             formattedResult +=
                 '\n  Injection Volume Range: ${medication['injection_volume_range']}';
           }
-        } else if (medication['type'] == 'inj' ||
-            medication['type'] == 'vial') {
-          if (medication.containsKey('volume')) {
-            var volume = double.parse(medication['volume']);
-            formattedResult += '\n  Volume: ${volume.toStringAsFixed(2)}';
-          } else {
-            formattedResult += '\n  Volume: Not specified';
-          }
         }
       }
 
-      formattedResult += '\n\n';
+      formattedResult += '\n\n'; // Add a blank line after each medication
     }
 
     setState(() {

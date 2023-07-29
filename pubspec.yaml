@@ -53,6 +53,9 @@ dependencies:
   flutter_typeahead: ^4.6.2
   image_picker: ^1.0.1
   image_picker_web: ^3.0.0+1
+  cloud_firestore: ^4.8.3
+  flutter_image: ^4.1.6
+  carousel_slider: ^4.2.0
 
 dev_dependencies:
   flutter_test:
@@ -85,6 +88,7 @@ flutter:
      - assets/app_icon.png
      - assets/icon.png
      - assets/logo.png
+     - assets/placeholder_image.png
      - assets/terms.txt
   #   - images/a_dot_ham.jpeg
 
