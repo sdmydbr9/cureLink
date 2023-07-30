@@ -34,11 +34,11 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
         context: context,
         builder: (BuildContext context) {
           return CupertinoAlertDialog(
-            title: Text('Error'),
-            content: Text('Please enter a valid body weight'),
+            title: const Text('Error'),
+            content: const Text('Please enter a valid body weight'),
             actions: <Widget>[
               CupertinoDialogAction(
-                child: Text('OK'),
+                child: const Text('OK'),
                 onPressed: () {
                   Navigator.of(context).pop();
                 },
@@ -134,11 +134,11 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
       context: context,
       builder: (BuildContext context) {
         return CupertinoAlertDialog(
-          title: Text('Calculation Results'),
+          title: const Text('Calculation Results'),
           content: Text(formattedResult),
           actions: <Widget>[
             CupertinoDialogAction(
-              child: Text('Close'),
+              child: const Text('Close'),
               onPressed: () {
                 Navigator.of(context).pop();
               },
@@ -153,16 +153,16 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
       child: Padding(
-        padding: EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            SizedBox(
+            const SizedBox(
                 height:
                     40.0), // Add space between navigation bar and text fields
             TypeAheadFormField<Medication>(
               loadingBuilder: (BuildContext context) {
-                return Center(
+                return const Center(
                   child: CupertinoActivityIndicator(),
                 );
               },
@@ -172,24 +172,24 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
                   labelText: 'Medication Name',
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12.0),
-                    borderSide: BorderSide(color: Colors.grey),
+                    borderSide: const BorderSide(color: Colors.grey),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12.0),
-                    borderSide: BorderSide(color: Colors.grey),
+                    borderSide: const BorderSide(color: Colors.grey),
                   ),
-                  labelStyle: TextStyle(color: Colors.grey),
+                  labelStyle: const TextStyle(color: Colors.grey),
                   focusedErrorBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12.0),
-                    borderSide: BorderSide(color: Colors.grey),
+                    borderSide: const BorderSide(color: Colors.grey),
                   ),
                   errorBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12.0),
-                    borderSide: BorderSide(color: Colors.grey),
+                    borderSide: const BorderSide(color: Colors.grey),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12.0),
-                    borderSide: BorderSide(color: Colors.grey),
+                    borderSide: const BorderSide(color: Colors.grey),
                   ),
                 ),
               ),
@@ -211,10 +211,10 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
                 return null;
               },
             ),
-            SizedBox(height: 16.0),
+            const SizedBox(height: 16.0),
             TypeAheadFormField<String>(
               loadingBuilder: (BuildContext context) {
-                return Center(
+                return const Center(
                   child: CupertinoActivityIndicator(),
                 );
               },
@@ -224,23 +224,24 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
                   labelText: 'Species',
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12.0),
-                    borderSide: BorderSide(color: Colors.grey),
+                    borderSide: const BorderSide(color: Colors.grey),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12.0),
-                    borderSide: BorderSide(color: Colors.grey),
+                    borderSide: const BorderSide(color: Colors.grey),
                   ),
-                  labelStyle: TextStyle(color: Colors.grey),
+                  labelStyle: const TextStyle(color: Colors.grey),
                   focusedErrorBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12.0),
-                    borderSide: BorderSide(color: Colors.grey),
+                    borderSide: const BorderSide(color: Colors.grey),
                   ),
                   errorBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12.0),
-                    borderSide: BorderSide(color: Colors.grey),
+                    borderSide: const BorderSide(color: Colors.grey),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12.0),
+                    // ignore: prefer_const_constructors
                     borderSide: BorderSide(color: Colors.grey),
                   ),
                 ),
@@ -263,31 +264,31 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
                 return null;
               },
             ),
-            SizedBox(height: 16.0),
+            const SizedBox(height: 16.0),
             TextFormField(
               controller: bodyWeightController,
               decoration: InputDecoration(
                 labelText: 'Body Weight (kg)',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12.0),
-                  borderSide: BorderSide(color: Colors.grey),
+                  borderSide: const BorderSide(color: Colors.grey),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12.0),
-                  borderSide: BorderSide(color: Colors.grey),
+                  borderSide: const BorderSide(color: Colors.grey),
                 ),
-                labelStyle: TextStyle(color: Colors.grey),
+                labelStyle: const TextStyle(color: Colors.grey),
                 focusedErrorBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12.0),
-                  borderSide: BorderSide(color: Colors.grey),
+                  borderSide: const BorderSide(color: Colors.grey),
                 ),
                 errorBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12.0),
-                  borderSide: BorderSide(color: Colors.grey),
+                  borderSide: const BorderSide(color: Colors.grey),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12.0),
-                  borderSide: BorderSide(color: Colors.grey),
+                  borderSide: const BorderSide(color: Colors.grey),
                 ),
               ),
               keyboardType: TextInputType.number,
@@ -298,11 +299,11 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
                 return null;
               },
             ),
-            SizedBox(height: 16.0),
+            const SizedBox(height: 16.0),
             CupertinoButton.filled(
               child: _isLoading
-                  ? CupertinoActivityIndicator()
-                  : Text('Calculate', style: TextStyle(fontSize: 18)),
+                  ? const CupertinoActivityIndicator()
+                  : const Text('Calculate', style: TextStyle(fontSize: 18)),
               onPressed: _isLoading ? null : calculateMedication,
             ),
           ],

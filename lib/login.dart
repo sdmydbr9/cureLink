@@ -56,11 +56,12 @@ class _LoginScreenState extends State<LoginScreen> {
             context: context,
             builder: (BuildContext context) {
               return CupertinoAlertDialog(
-                title: Text('Error'),
-                content: Text('Failed to fetch username. Please try again.'),
+                title: const Text('Error'),
+                content:
+                    const Text('Failed to fetch username. Please try again.'),
                 actions: <Widget>[
                   CupertinoDialogAction(
-                    child: Text('OK'),
+                    child: const Text('OK'),
                     onPressed: () {
                       Navigator.of(context).pop();
                     },
@@ -93,11 +94,12 @@ class _LoginScreenState extends State<LoginScreen> {
             context: context,
             builder: (BuildContext context) {
               return CupertinoAlertDialog(
-                title: Text('Verification Failed'),
-                content: Text('OTP verification failed. Please try again.'),
+                title: const Text('Verification Failed'),
+                content:
+                    const Text('OTP verification failed. Please try again.'),
                 actions: <Widget>[
                   CupertinoDialogAction(
-                    child: Text('OK'),
+                    child: const Text('OK'),
                     onPressed: () {
                       Navigator.of(context).pop();
                     },
@@ -113,11 +115,11 @@ class _LoginScreenState extends State<LoginScreen> {
         context: context,
         builder: (BuildContext context) {
           return CupertinoAlertDialog(
-            title: Text('Login Failed'),
-            content: Text('Invalid username or password'),
+            title: const Text('Login Failed'),
+            content: const Text('Invalid username or password'),
             actions: <Widget>[
               CupertinoDialogAction(
-                child: Text('OK'),
+                child: const Text('OK'),
                 onPressed: () {
                   Navigator.of(context).pop();
                 },
@@ -130,7 +132,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _showMenu(BuildContext context) {
-    final radius = Radius.circular(8.0);
+    final radius = const Radius.circular(8.0);
     showMenu(
       context: context,
       position: RelativeRect.fromLTRB(
@@ -144,9 +146,9 @@ class _LoginScreenState extends State<LoginScreen> {
           value: 'admin',
           child: Row(
             children: [
-              Icon(CupertinoIcons.gear, size: 20),
-              SizedBox(width: 10),
-              Text('Admin'),
+              const Icon(CupertinoIcons.gear, size: 20),
+              const SizedBox(width: 10),
+              const Text('Admin'),
             ],
           ),
         ),
@@ -154,9 +156,9 @@ class _LoginScreenState extends State<LoginScreen> {
           value: 'calculate',
           child: Row(
             children: [
-              Icon(CupertinoIcons.doc_checkmark, size: 20),
-              SizedBox(width: 10),
-              Text('calculate'),
+              const Icon(CupertinoIcons.doc_checkmark, size: 20),
+              const SizedBox(width: 10),
+              const Text('calculate'),
             ],
           ),
         ),
@@ -164,9 +166,9 @@ class _LoginScreenState extends State<LoginScreen> {
           value: 'info',
           child: Row(
             children: [
-              Icon(CupertinoIcons.info, size: 20),
-              SizedBox(width: 10),
-              Text('know more'),
+              const Icon(CupertinoIcons.info, size: 20),
+              const SizedBox(width: 10),
+              const Text('know more'),
             ],
           ),
         ),
@@ -192,12 +194,12 @@ class _LoginScreenState extends State<LoginScreen> {
     final TextEditingController otpController = TextEditingController();
 
     return CupertinoAlertDialog(
-      title: Text('OTP Verification'),
+      title: const Text('OTP Verification'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text('Enter the OTP received on your device:'),
-          SizedBox(height: 8.0),
+          const Text('Enter the OTP received on your device:'),
+          const SizedBox(height: 8.0),
           CupertinoTextField(
             controller: otpController,
             textAlign: TextAlign.center, // Align the entered OTP at the center.
@@ -213,7 +215,7 @@ class _LoginScreenState extends State<LoginScreen> {
       actions: <Widget>[
         Center(
           child: CupertinoButton(
-            child: Text('Verify'),
+            child: const Text('Verify'),
             onPressed: () async {
               String otp = otpController.text;
               bool verificationResult =
@@ -309,12 +311,12 @@ class _LoginScreenState extends State<LoginScreen> {
       context: context,
       builder: (BuildContext context) {
         return CupertinoAlertDialog(
-          title: Text('Signup First'),
-          content:
-              Text('The username/email does not exist. Please sign up first.'),
+          title: const Text('Signup First'),
+          content: const Text(
+              'The username/email does not exist. Please sign up first.'),
           actions: <Widget>[
             CupertinoDialogAction(
-              child: Text('OK'),
+              child: const Text('OK'),
               onPressed: () {
                 Navigator.of(context).pop();
               },
@@ -333,7 +335,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     final isDarkMode = false; // Always use the light theme
 
-    final navBarHeight = CupertinoNavigationBar().preferredSize.height;
+    final navBarHeight = const CupertinoNavigationBar().preferredSize.height;
 
     return CupertinoPageScaffold(
       navigationBar: CupertinoNavigationBar(
@@ -353,7 +355,7 @@ class _LoginScreenState extends State<LoginScreen> {
               onTap: () {
                 // Handle any onTap functionality if needed
               },
-              child: Text(
+              child: const Text(
                 'cureLink',
                 style: TextStyle(
                   fontSize: 28.0,
@@ -366,7 +368,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         trailing: CupertinoButton(
           padding: EdgeInsets.zero,
-          child: Icon(
+          child: const Icon(
             CupertinoIcons.ellipsis,
             color: CupertinoColors.systemGrey, // Set the color to grey
           ),
@@ -383,12 +385,12 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: <Widget>[
-                    SizedBox(
+                    const SizedBox(
                       height: 40,
                     ),
                     LogoAnimation(),
                     SizedBox(height: layoutSpacing),
-                    SizedBox(
+                    const SizedBox(
                       height: 40,
                     ),
                     CupertinoTextField(
@@ -398,22 +400,22 @@ class _LoginScreenState extends State<LoginScreen> {
                         borderRadius: BorderRadius.circular(8.0),
                       ),
                       placeholder: 'Username or Email',
-                      placeholderStyle: TextStyle(
+                      placeholderStyle: const TextStyle(
                         color: CupertinoColors
                             .placeholderText, // Set the color of the placeholder based on the theme
                       ),
-                      prefix: Padding(
+                      prefix: const Padding(
                         padding: EdgeInsets.only(left: 8.0, right: 8.0),
                         child: Icon(CupertinoIcons.person),
                       ),
                       suffix: isLoading
-                          ? CupertinoActivityIndicator()
+                          ? const CupertinoActivityIndicator()
                           : CupertinoButton(
                               padding: EdgeInsets.zero,
                               onPressed: isLoading
                                   ? null
                                   : () => _handleArrowTap(context),
-                              child: Icon(
+                              child: const Icon(
                                 CupertinoIcons.arrow_right_circle,
                                 color: CupertinoColors
                                     .black, // Change the color here
@@ -434,12 +436,12 @@ class _LoginScreenState extends State<LoginScreen> {
                           borderRadius: BorderRadius.circular(8.0),
                         ),
                         placeholder: 'Password',
-                        placeholderStyle: TextStyle(
+                        placeholderStyle: const TextStyle(
                           color: CupertinoColors
                               .placeholderText, // Set the color of the placeholder based on the theme
                         ),
                         obscureText: true,
-                        prefix: Icon(CupertinoIcons.lock),
+                        prefix: const Icon(CupertinoIcons.lock),
                         style: TextStyle(
                           fontSize: fontSize,
                           color: CupertinoColors
@@ -452,7 +454,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         onPressed:
                             isLoading ? null : () => _handleLogin(context),
                         child: isLoading
-                            ? CupertinoActivityIndicator()
+                            ? const CupertinoActivityIndicator()
                             : Text('Login',
                                 style: TextStyle(
                                     fontSize: fontSize,

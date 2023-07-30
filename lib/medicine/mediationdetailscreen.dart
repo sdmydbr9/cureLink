@@ -2,7 +2,8 @@ import 'package:cure_link/medicine/popup_utils.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
-import 'expanded_dosage.dart'; // Import the new file
+import 'popup_utils.dart';
+import 'calculation_result_card.dart';
 
 class MedicationDetailsScreen extends StatefulWidget {
   final dynamic medication;
@@ -16,6 +17,9 @@ class MedicationDetailsScreen extends StatefulWidget {
 
 class _MedicationDetailsScreenState extends State<MedicationDetailsScreen> {
   bool _isScrolledDown = false; // Initialize the scroll state
+
+  String _calculationResult = '';
+  TextEditingController _resultController = TextEditingController();
 
   // Listen to the scroll position and update the _isScrolledDown variable accordingly
   void _handleScroll(ScrollNotification notification) {
@@ -34,10 +38,28 @@ class _MedicationDetailsScreenState extends State<MedicationDetailsScreen> {
     }
   }
 
+  void updateResultCard(String formattedResult) {
+    print('Updating result card in MedicationDetailsScreen: $formattedResult');
+
+    // Set the calculation result to the local variable
+    _calculationResult = formattedResult;
+
+    // Split the formattedResult into individual medication results
+    List<String> medicationResults = formattedResult.split('\n\n');
+
+    // Add a new CalculationResultCard for each medication result
+
+    setState(() {
+      // No need to add anything here; we already updated the resultCards list above
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    print('Build method called in _MedicationDetailsScreenState.');
+
     return CupertinoApp(
-      theme: CupertinoThemeData(brightness: Brightness.light),
+      theme: const CupertinoThemeData(brightness: Brightness.light),
       home: NotificationListener<ScrollNotification>(
         onNotification: (notification) {
           _handleScroll(notification);
@@ -56,7 +78,7 @@ class _MedicationDetailsScreenState extends State<MedicationDetailsScreen> {
                   widget.medication['name'].toString().replaceFirst(
                       widget.medication['name'].toString()[0],
                       widget.medication['name'].toString()[0].toUpperCase()),
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 20,
                     color: CupertinoColors.black,
                   ),
@@ -67,20 +89,25 @@ class _MedicationDetailsScreenState extends State<MedicationDetailsScreen> {
                   maintainAnimation: true,
                   maintainSize: true,
                   child: Container(
-                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
                     decoration: BoxDecoration(
-                      color: Color.fromARGB(255, 0, 64, 221),
+                      color: const Color.fromARGB(255, 0, 64, 221),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: CupertinoButton(
                       onPressed: () {
-                        showMedicationNamePopup(
-                          context,
-                          widget.medication['name'].toString(),
+                        showCupertinoModalPopup(
+                          context: context,
+                          builder: (BuildContext context) =>
+                              PopupCalculatorScreen(
+                            medicationName:
+                                widget.medication['name'].toString(),
+                            updateResultCard: updateResultCard,
+                          ),
                         );
                       },
                       padding: EdgeInsets.zero,
-                      child: Text(
+                      child: const Text(
                         'Calculate',
                         style: TextStyle(
                           fontSize: 14,
@@ -92,33 +119,38 @@ class _MedicationDetailsScreenState extends State<MedicationDetailsScreen> {
                 ),
               ),
               SliverToBoxAdapter(
-                child: SingleChildScrollView(
-                  padding: EdgeInsets.all(16.0),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
                   child: DefaultTextStyle(
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: CupertinoColors.black,
                       fontSize: 16.0,
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        SizedBox(height: 16),
+                        const SizedBox(height: 16),
                         _buildTopSection(widget.medication),
-                        SizedBox(height: 40),
+                        const SizedBox(height: 40),
                         _buildSecondarySection(),
-                        SizedBox(
+                        const SizedBox(
                             height:
                                 40), // Add some spacing after the secondary section
                         _buildDosageAndDetailsPairs(
                           widget.medication['dosage'],
                           widget.medication['medication_details'],
                         ),
-                        SizedBox(height: 40),
+                        const SizedBox(height: 40),
                         _buildMedicationDetailsSection(widget.medication),
+                        const SizedBox(
+                            height: 16), // Add some extra spacing at the bottom
                       ],
                     ),
                   ),
                 ),
+              ),
+              SliverToBoxAdapter(
+                child: _buildResultSection(), // Display the result section
               ),
             ],
           ),
@@ -153,9 +185,9 @@ class _MedicationDetailsScreenState extends State<MedicationDetailsScreen> {
                         fit: BoxFit.cover,
                       ),
                     )
-                  : Placeholder(), // You can replace Placeholder with any default image widget
+                  : const Placeholder(), // You can replace Placeholder with any default image widget
             ),
-            SizedBox(width: 16),
+            const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -164,43 +196,50 @@ class _MedicationDetailsScreenState extends State<MedicationDetailsScreen> {
                     medication['name'].toString().replaceFirst(
                         medication['name'].toString()[0],
                         medication['name'].toString()[0].toUpperCase()),
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 20,
                       color: CupertinoColors.black,
                     ),
                   ),
-                  SizedBox(height: 4),
+                  const SizedBox(height: 4),
                   Text(
                     '${medication['category'].toString().replaceFirst(medication['category'].toString()[0], medication['category'].toString()[0].toUpperCase())}',
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 16,
                       color: CupertinoColors.systemGrey3,
                     ),
                   ),
-                  SizedBox(height: 30),
+                  const SizedBox(height: 30),
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(
-                        15), // Adjust the radius value as per your preference
+                    borderRadius: BorderRadius.circular(15),
                     child: CupertinoButton(
                       onPressed: () {
-                        showMedicationNamePopup(
-                            context, widget.medication['name'].toString());
+                        showCupertinoModalPopup(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return PopupCalculatorScreen(
+                              medicationName:
+                                  widget.medication['name'].toString(),
+                              updateResultCard:
+                                  updateResultCard, // Pass the updateResultCard function
+                            );
+                          },
+                        );
                       },
-                      color: Color.fromARGB(
-                          255, 0, 64, 221), // Set the color to blue
-                      child: Text('Calculate'),
+                      color: const Color.fromARGB(255, 0, 64, 221),
+                      child: const Text('Calculate'),
                     ),
                   ),
-                  SizedBox(height: 8),
-                  SizedBox(height: 20),
+                  const SizedBox(height: 8),
+                  const SizedBox(height: 20),
                 ],
               ),
             ),
           ],
         ),
         // Space between button and divider
-        Divider(color: CupertinoColors.systemGrey), // Divider line
+        const Divider(color: CupertinoColors.systemGrey), // Divider line
       ],
     );
   }
@@ -234,24 +273,55 @@ class _MedicationDetailsScreenState extends State<MedicationDetailsScreen> {
             alignment: Alignment.center, // Center the icon
             child: Icon(iconData, color: CupertinoColors.inactiveGray),
           ),
-          SizedBox(height: 4),
+          const SizedBox(height: 4),
           Text(
             title,
-            style: TextStyle(
+            style: const TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 14,
               color: CupertinoColors.inactiveGray,
             ),
           ),
-          SizedBox(height: 4),
+          const SizedBox(height: 4),
           Text(
             content,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 12,
               color: CupertinoColors.systemGrey3,
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildResultSection() {
+    // Check if there are any calculation results to display
+    if (_calculationResult.isEmpty) {
+      return Container(); // If there are no results, return an empty container
+    }
+
+    return CupertinoPopupSurface(
+      isSurfacePainted: true,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Calculation Result:',
+              style: const TextStyle(
+                fontSize: 18.0,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16.0),
+            Text(
+              _calculationResult ?? 'No results yet',
+              style: const TextStyle(fontSize: 16.0),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -276,7 +346,7 @@ class _MedicationDetailsScreenState extends State<MedicationDetailsScreen> {
       // Wrap ExpandedDosageCard with ListView
       shrinkWrap: true,
       physics:
-          NeverScrollableScrollPhysics(), // Disable scrolling for the ListView
+          const NeverScrollableScrollPhysics(), // Disable scrolling for the ListView
       children: [
         // Display the carousel with images
         Container(
@@ -291,8 +361,8 @@ class _MedicationDetailsScreenState extends State<MedicationDetailsScreen> {
                     return Container(
                       width: MediaQuery.of(context).size.width -
                           40, // Adjust the width to decrease spacing
-                      margin: EdgeInsets.symmetric(horizontal: 5.0),
-                      decoration: BoxDecoration(
+                      margin: const EdgeInsets.symmetric(horizontal: 5.0),
+                      decoration: const BoxDecoration(
                         color: Colors.white,
                       ),
                       child: ClipRRect(
@@ -307,7 +377,7 @@ class _MedicationDetailsScreenState extends State<MedicationDetailsScreen> {
                 );
               }).toList(),
               options: CarouselOptions(
-                autoPlay: false,
+                autoPlay: true,
                 aspectRatio: 9 / 16, // Set the aspect ratio to 9:16 (portrait)
                 enlargeCenterPage: true,
                 enableInfiniteScroll:
@@ -320,7 +390,7 @@ class _MedicationDetailsScreenState extends State<MedicationDetailsScreen> {
         ),
 
         // Add a divider between details and dosage
-        Divider(color: Colors.grey),
+        const Divider(color: Colors.grey),
 
         // Display all dosages
         ...dosages.map((dosage) => GestureDetector(
@@ -359,7 +429,7 @@ class _MedicationDetailsScreenState extends State<MedicationDetailsScreen> {
                 });
               },
               child: AnimatedContainer(
-                duration: Duration(
+                duration: const Duration(
                     milliseconds: 300), // Animation duration in milliseconds
                 height: currentHeight,
                 child: CupertinoPopupSurface(
@@ -367,7 +437,7 @@ class _MedicationDetailsScreenState extends State<MedicationDetailsScreen> {
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: DefaultTextStyle(
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 14,
                         color: CupertinoColors.black,
                       ),
@@ -386,39 +456,39 @@ class _MedicationDetailsScreenState extends State<MedicationDetailsScreen> {
                                   width: 48,
                                   height: 48,
                                 ),
-                                SizedBox(height: 8),
+                                const SizedBox(height: 8),
                                 Text(
                                   '${dosage['species']}',
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                          SizedBox(height: 8),
+                          const SizedBox(height: 8),
                           Text(
                             'Dosage: ${dosage['dosage']} ${dosage['unit']} / ${dosage['bodyWeight']} ${dosage['weightUnit']}',
                           ),
-                          SizedBox(height: 8),
+                          const SizedBox(height: 8),
                           Text(
                             'Route: ${dosage['route']}',
                           ),
-                          SizedBox(height: 8),
+                          const SizedBox(height: 8),
 
                           if (showMoreInfo)
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                SizedBox(height: 8),
-                                Text('MOA: Placeholder'),
-                                SizedBox(height: 8),
-                                Text('Contraindication: Placeholder'),
-                                SizedBox(height: 8),
-                                Text('Indication: Placeholder'),
-                                SizedBox(height: 8),
-                                Text('Common Side Effect: Placeholder'),
-                                SizedBox(height: 8),
+                                const SizedBox(height: 8),
+                                const Text('MOA: Placeholder'),
+                                const SizedBox(height: 8),
+                                const Text('Contraindication: Placeholder'),
+                                const SizedBox(height: 8),
+                                const Text('Indication: Placeholder'),
+                                const SizedBox(height: 8),
+                                const Text('Common Side Effect: Placeholder'),
+                                const SizedBox(height: 8),
                               ],
                             ),
 
@@ -427,7 +497,7 @@ class _MedicationDetailsScreenState extends State<MedicationDetailsScreen> {
                               Navigator.pop(
                                   context); // Close the popup when "Info" button is pressed
                             },
-                            child: Text('Close'),
+                            child: const Text('Close'),
                           ),
                         ],
                       ),
@@ -465,7 +535,7 @@ Widget _buildDosageTile(
       borderRadius: BorderRadius.circular(8), // Rounded corners for the card
     ),
     child: Container(
-      padding: EdgeInsets.all(8),
+      padding: const EdgeInsets.all(8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -474,22 +544,22 @@ Widget _buildDosageTile(
             width: 32,
             height: 32,
           ),
-          SizedBox(width: 8),
+          const SizedBox(width: 8),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   '$species Dosage: ${dosage['dosage']} ${dosage['unit']} / ${dosage['bodyWeight']} ${dosage['weightUnit']} ',
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     color: Colors.black,
                   ),
                 ),
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
                 Text(
                   'Route: ${dosage['route']}',
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: Colors.black,
                   ),
                 ),
@@ -518,7 +588,7 @@ Widget _buildMedicationDetailsSection(dynamic medication) {
   return Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      SizedBox(height: 8),
+      const SizedBox(height: 8),
       for (var detail in medicationDetails)
         Card(
           elevation: 4,
@@ -548,32 +618,33 @@ Widget _buildMedicationDetailsSection(dynamic medication) {
                     children: [
                       Text(
                         'Name: ${detail['name']} ${detail['presentation']} ${detail['presentationUnit']}',
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 16,
                           color: CupertinoColors.black,
                         ),
                       ),
-                      SizedBox(height: 8),
+                      const SizedBox(height: 8),
                       Text(
                         'Concentration: ${detail['concentration']} ${detail['unit']}',
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 16,
                           color: CupertinoColors.black,
                         ),
                       ),
-                      SizedBox(height: 8),
+                      const SizedBox(height: 8),
                       Text(
                         'Presentation: ${detail['presentation']} ${detail['presentationUnit']}',
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 16,
                           color: CupertinoColors.black,
                         ),
                       ),
-                      SizedBox(height: 8), // Add spacing between details
+                      const SizedBox(height: 8), // Add spacing between details
                     ],
                   ),
                 ),
-                SizedBox(width: 8), // Add spacing between the icon and text
+                const SizedBox(
+                    width: 8), // Add spacing between the icon and text
                 ClipRRect(
                   borderRadius: BorderRadius.circular(
                       18), // Adjust the radius as per your preference
@@ -594,7 +665,7 @@ Widget _buildMedicationDetailsSection(dynamic medication) {
 
 Widget _buildMedicationDetailsTile(Map<String, dynamic> details) {
   return Container(
-    padding: EdgeInsets.all(8),
+    padding: const EdgeInsets.all(8),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [],

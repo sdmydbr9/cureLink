@@ -39,7 +39,7 @@ class _MedicalPortalHomePageState extends State<MedicalPortalHomePage>
   }
 
   void _showMenu(BuildContext context) {
-    final radius = Radius.circular(8.0);
+    final radius = const Radius.circular(8.0);
     showMenu(
       context: context,
       position: RelativeRect.fromLTRB(
@@ -53,9 +53,9 @@ class _MedicalPortalHomePageState extends State<MedicalPortalHomePage>
           value: 'admin',
           child: Row(
             children: [
-              Icon(CupertinoIcons.gear, size: 20),
-              SizedBox(width: 10),
-              Text('Admin'),
+              const Icon(CupertinoIcons.gear, size: 20),
+              const SizedBox(width: 10),
+              const Text('Admin'),
             ],
           ),
         ),
@@ -63,9 +63,9 @@ class _MedicalPortalHomePageState extends State<MedicalPortalHomePage>
           value: 'terms',
           child: Row(
             children: [
-              Icon(CupertinoIcons.doc_plaintext, size: 20),
-              SizedBox(width: 10),
-              Text('Terms & Conditions'),
+              const Icon(CupertinoIcons.doc_plaintext, size: 20),
+              const SizedBox(width: 10),
+              const Text('Terms & Conditions'),
             ],
           ),
         ),
@@ -73,9 +73,9 @@ class _MedicalPortalHomePageState extends State<MedicalPortalHomePage>
           value: 'logout',
           child: Row(
             children: [
-              Icon(CupertinoIcons.arrow_uturn_left, size: 20),
-              SizedBox(width: 10),
-              Text('Logout'),
+              const Icon(CupertinoIcons.arrow_uturn_left, size: 20),
+              const SizedBox(width: 10),
+              const Text('Logout'),
             ],
           ),
         ),
@@ -150,7 +150,7 @@ class _MedicalPortalHomePageState extends State<MedicalPortalHomePage>
             const EdgeInsets.only(bottom: 16.0), // Add spacing at the bottom
         child: CupertinoTabBar(
           backgroundColor: CupertinoColors.extraLightBackgroundGray,
-          activeColor: Color.fromARGB(255, 0, 64, 221),
+          activeColor: const Color.fromARGB(255, 0, 64, 221),
           currentIndex: _tabController.index,
           onTap: (index) {
             setState(() {
