@@ -1,9 +1,9 @@
-import 'package:cure_link/medicine/popup_utils.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'popup_utils.dart';
-import 'calculation_result_card.dart';
 
 class MedicationDetailsScreen extends StatefulWidget {
   final dynamic medication;
@@ -17,6 +17,11 @@ class MedicationDetailsScreen extends StatefulWidget {
 
 class _MedicationDetailsScreenState extends State<MedicationDetailsScreen> {
   bool _isScrolledDown = false; // Initialize the scroll state
+  int _lowerDoseRate = 0;
+  int _upperDoseRate = 0;
+  List<dynamic> _medications = [];
+  Future<Map<String, dynamic>>? _medicationInfoFuture;
+  Future<List<String>>? _recommendedForFuture;
 
   String _calculationResult = '';
   TextEditingController _resultController = TextEditingController();
@@ -38,19 +43,69 @@ class _MedicationDetailsScreenState extends State<MedicationDetailsScreen> {
     }
   }
 
-  void updateResultCard(String formattedResult) {
+  Future<List<String>> fetchRecommendedFor(String medicationName) async {
+    String url =
+        'https://pethealthwizard.tech:8082/get_info_by_name?name=$medicationName';
+    print('API URL: $url');
+
+    final response = await http.get(Uri.parse(url));
+    print('API Response Status Code: ${response.statusCode}');
+    print('API Response Body: ${response.body}');
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      print('Decoded JSON Data: $data');
+
+      final selectedSpecies = data['selectedSpecies'] as String;
+      print('Selected Species: $selectedSpecies');
+
+      final recommendedFor =
+          selectedSpecies.split(',').map((s) => s.trim()).toList();
+      print('Recommended For List: $recommendedFor');
+
+      return recommendedFor;
+    } else {
+      throw Exception('Failed to load medication data');
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _medicationInfoFuture =
+        fetchMedicationInfo(widget.medication['name'].toString());
+    _recommendedForFuture =
+        fetchRecommendedFor(widget.medication['name'].toString());
+  }
+
+  Future<Map<String, dynamic>> fetchMedicationInfo(
+      String medicationName) async {
+    String url =
+        'https://pethealthwizard.tech:8082/get_info_by_name?name=$medicationName';
+    final response = await http.get(Uri.parse(url));
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to load medication data');
+    }
+  }
+
+  void updateResultCard(
+    String formattedResult,
+    String medicationName,
+    String species,
+    int lowerDoseRate,
+    int upperDoseRate,
+    List<dynamic> medications,
+  ) {
     print('Updating result card in MedicationDetailsScreen: $formattedResult');
 
     // Set the calculation result to the local variable
-    _calculationResult = formattedResult;
-
-    // Split the formattedResult into individual medication results
-    List<String> medicationResults = formattedResult.split('\n\n');
-
-    // Add a new CalculationResultCard for each medication result
-
     setState(() {
-      // No need to add anything here; we already updated the resultCards list above
+      _calculationResult = formattedResult;
+      _lowerDoseRate = lowerDoseRate;
+      _upperDoseRate = upperDoseRate;
+      _medications = medications;
     });
   }
 
@@ -103,6 +158,11 @@ class _MedicationDetailsScreenState extends State<MedicationDetailsScreen> {
                             medicationName:
                                 widget.medication['name'].toString(),
                             updateResultCard: updateResultCard,
+                            onMedicationInfoChanged: (species, bodyWeight) {
+                              // Implement the logic you want to execute when medication info changes
+                              // For example, you can call performMedicationCalculation here
+                              // with the updated species and bodyWeight.
+                            },
                           ),
                         );
                       },
@@ -221,8 +281,12 @@ class _MedicationDetailsScreenState extends State<MedicationDetailsScreen> {
                             return PopupCalculatorScreen(
                               medicationName:
                                   widget.medication['name'].toString(),
-                              updateResultCard:
-                                  updateResultCard, // Pass the updateResultCard function
+                              updateResultCard: updateResultCard,
+                              onMedicationInfoChanged: (species, bodyWeight) {
+                                // Implement the logic you want to execute when medication info changes
+                                // For example, you can call performMedicationCalculation here
+                                // with the updated species and bodyWeight.
+                              },
                             );
                           },
                         );
@@ -245,54 +309,387 @@ class _MedicationDetailsScreenState extends State<MedicationDetailsScreen> {
   }
 
   Widget _buildSecondarySection() {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: [
-          _buildSection(CupertinoIcons.tag, 'Category', 'Category placeholder'),
-          _buildSection(CupertinoIcons.eye, 'MOA', 'MOA placeholder'),
-          _buildSection(CupertinoIcons.exclamationmark_octagon_fill,
-              'Contraindication', 'Contraindication placeholder'),
-          _buildSection(CupertinoIcons.person_2_fill, 'Recommended for',
-              'Recommended for placeholder'),
-          _buildSection(CupertinoIcons.bolt_fill, 'Common Side Effect',
-              'Common Side Effect placeholder'),
-        ],
+    String formattedCategory =
+        '${widget.medication['category'].toString().replaceFirst(widget.medication['category'].toString()[0], widget.medication['category'].toString()[0].toUpperCase())}';
+
+    return FutureBuilder<Map<String, dynamic>>(
+      future: _medicationInfoFuture,
+      builder: (context, medicationSnapshot) {
+        if (medicationSnapshot.connectionState == ConnectionState.waiting) {
+          return SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                Flexible(
+                  child: _buildSection(
+                    CupertinoIcons.tag,
+                    'Category',
+                    formattedCategory,
+                  ),
+                ),
+                Flexible(
+                  child: _buildSection(
+                    CupertinoIcons.eye,
+                    'MOA',
+                    'View',
+                  ),
+                ),
+                Flexible(
+                  child: _buildSection(
+                    CupertinoIcons.exclamationmark_octagon_fill,
+                    'Contraindication',
+                    'View',
+                  ),
+                ),
+                Flexible(
+                  child: _buildSection(
+                    CupertinoIcons.person_2_fill,
+                    'Recommended for',
+                    'Loading...', // Show loading message while fetching data
+                  ),
+                ),
+                Flexible(
+                  child: _buildSection(
+                    CupertinoIcons.bolt_fill,
+                    'Common Side Effect',
+                    'View',
+                  ),
+                ),
+              ],
+            ),
+          );
+        } else if (medicationSnapshot.hasError) {
+          return SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                Flexible(
+                  child: _buildSection(
+                    CupertinoIcons.tag,
+                    'Category',
+                    formattedCategory,
+                  ),
+                ),
+                Flexible(
+                  child: _buildSection(
+                    CupertinoIcons.eye,
+                    'MOA',
+                    'View',
+                  ),
+                ),
+                Flexible(
+                  child: _buildSection(
+                    CupertinoIcons.exclamationmark_octagon_fill,
+                    'Contraindication',
+                    'View',
+                  ),
+                ),
+                Flexible(
+                  child: _buildSection(
+                    CupertinoIcons.person_2_fill,
+                    'Recommended for',
+                    'Error loading data', // Show error message if API call fails
+                  ),
+                ),
+                Flexible(
+                  child: _buildSection(
+                    CupertinoIcons.bolt_fill,
+                    'Common Side Effect',
+                    'View',
+                  ),
+                ),
+              ],
+            ),
+          );
+        } else {
+          Map<String, dynamic> medicationInfo = medicationSnapshot.data!;
+
+          return FutureBuilder<List<String>>(
+            future: _recommendedForFuture,
+            builder: (context, recommendedForSnapshot) {
+              if (recommendedForSnapshot.connectionState ==
+                  ConnectionState.waiting) {
+                return SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      Flexible(
+                        child: _buildSection(
+                          CupertinoIcons.tag,
+                          'Category',
+                          formattedCategory,
+                        ),
+                      ),
+                      Flexible(
+                        child: _buildSection(
+                          CupertinoIcons.eye,
+                          'Mechanism',
+                          'View',
+                        ),
+                      ),
+                      Flexible(
+                        child: _buildSection(
+                          CupertinoIcons.exclamationmark_octagon_fill,
+                          'Contraindication',
+                          'View',
+                        ),
+                      ),
+                      Flexible(
+                        child: _buildSection(
+                          CupertinoIcons.person_2_fill,
+                          'Recommended for',
+                          'Loading...', // Show loading message while fetching recommended for data
+                        ),
+                      ),
+                      Flexible(
+                        child: _buildSection(
+                          CupertinoIcons.bolt_fill,
+                          'Side Effect',
+                          'View',
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              } else if (recommendedForSnapshot.hasError) {
+                return SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      Flexible(
+                        child: _buildSection(
+                          CupertinoIcons.tag,
+                          'Category',
+                          formattedCategory,
+                        ),
+                      ),
+                      Flexible(
+                        child: _buildSection(
+                          CupertinoIcons.eye,
+                          'Mechanism',
+                          'View',
+                        ),
+                      ),
+                      Flexible(
+                        child: _buildSection(
+                          CupertinoIcons.exclamationmark_octagon_fill,
+                          'Contraindication',
+                          'View',
+                        ),
+                      ),
+                      Flexible(
+                        child: _buildSection(
+                          CupertinoIcons.person_2_fill,
+                          'Recommended for',
+                          'Error loading data', // Show error message if recommended for API call fails
+                        ),
+                      ),
+                      Flexible(
+                        child: _buildSection(
+                          CupertinoIcons.bolt_fill,
+                          'Side Effect',
+                          'View',
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              } else {
+                List<String> recommendedFor = recommendedForSnapshot.data!;
+
+                return SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      Flexible(
+                        child: _buildSection(
+                          CupertinoIcons.tag,
+                          'Category',
+                          formattedCategory,
+                        ),
+                      ),
+                      Flexible(
+                        child: _buildSection(
+                          CupertinoIcons.eye,
+                          'Mechanism',
+                          'View',
+                          onTap: () => _showPopup(
+                              medicationInfo['mechanismOfAction'], 'Mechanism'),
+                        ),
+                      ),
+                      Flexible(
+                        child: _buildSection(
+                          CupertinoIcons.exclamationmark_octagon_fill,
+                          'Contraindication',
+                          'View',
+                          onTap: () => _showPopup(
+                              medicationInfo['contraindication'],
+                              'Contraindication'),
+                        ),
+                      ),
+                      Flexible(
+                        child: _buildSection(
+                          CupertinoIcons.person_2_fill,
+                          'Recommended for',
+                          recommendedFor.join(
+                              ', '), // Join the recommendedFor list with commas
+                          // No onTap callback for Recommended for section
+                        ),
+                      ),
+                      Flexible(
+                        child: _buildSection(
+                          CupertinoIcons.bolt_fill,
+                          'Side Effect',
+                          'View',
+                          onTap: () => _showPopup(
+                              medicationInfo['commonSideEffects'],
+                              'Side Effect'),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+            },
+          );
+        }
+      },
+    );
+  }
+
+  void _showPopup(String? data, String title) {
+    bool showMoreInfo = false;
+    final double minHeight = 200.0; // The initial height of the popup
+    double currentHeight = minHeight;
+
+    showCupertinoModalPopup(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return GestureDetector(
+              onVerticalDragUpdate: (details) {
+                // Detect vertical drag and update the showMoreInfo state accordingly
+                setState(() {
+                  showMoreInfo =
+                      details.delta.dy < 0; // Check if the drag is upwards
+                  currentHeight = showMoreInfo ? 400.0 : minHeight;
+                });
+              },
+              child: AnimatedContainer(
+                duration: const Duration(
+                    milliseconds: 300), // Animation duration in milliseconds
+                height: currentHeight,
+                child: CupertinoPopupSurface(
+                  isSurfacePainted: true,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: DefaultTextStyle(
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: CupertinoColors.black,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment
+                            .center, // Align children in the center
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Display the content here
+                          // ...
+                          Text(
+                            data ?? 'No data available',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              color:
+                                  Colors.black, // Use your preferred text color
+                              fontWeight: FontWeight
+                                  .normal, // Use your preferred font weight
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          CupertinoButton(
+                            onPressed: () {
+                              Navigator.pop(
+                                  context); // Close the popup when "Close" button is pressed
+                            },
+                            child: const Text('Close'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildSection(IconData iconData, String title, String content,
+      {VoidCallback? onTap}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Align(
+              alignment: Alignment.center,
+              child: Icon(iconData, color: CupertinoColors.inactiveGray),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              title,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+                color: CupertinoColors.inactiveGray,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              content,
+              style: const TextStyle(
+                fontSize: 12,
+                color: CupertinoColors.systemGrey3,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildSection(IconData iconData, String title, String content) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-      child: Column(
-        crossAxisAlignment:
-            CrossAxisAlignment.center, // Align items at the center
-        children: [
-          Align(
-            alignment: Alignment.center, // Center the icon
-            child: Icon(iconData, color: CupertinoColors.inactiveGray),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            title,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
-              color: CupertinoColors.inactiveGray,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            content,
-            style: const TextStyle(
-              fontSize: 12,
-              color: CupertinoColors.systemGrey3,
-            ),
-          ),
-        ],
-      ),
-    );
+  // Function to get the icon path based on species name
+  String? getSpeciesIconPath(String species) {
+    switch (species) {
+      case 'Dogs':
+        return 'assets/icons/dalmatian.png';
+      case 'Cats':
+        return 'assets/icons/cat.png';
+      case 'Cattle':
+        return 'assets/icons/cow.png';
+      case 'Caprine':
+        return 'assets/icons/goat.png';
+      case 'Horse':
+        return 'assets/icons/horse.png';
+      case 'Rabbits':
+        return 'assets/icons/rabbit.png';
+      case 'Avian':
+        return 'assets/icons/hen.png';
+      case 'Pigs':
+        return 'assets/icons/pig.png';
+      default:
+        return null; // Return null if the species name is not matched
+    }
   }
 
   Widget _buildResultSection() {
@@ -301,6 +698,37 @@ class _MedicationDetailsScreenState extends State<MedicationDetailsScreen> {
       return Container(); // If there are no results, return an empty container
     }
 
+    // Find the index of the medication name within the calculation result
+    final int medicationNameIndex =
+        _calculationResult.indexOf(widget.medication['name'].toString());
+
+    // Find the index of the "Species:" label within the calculation result
+    final int speciesLabelIndex = _calculationResult.indexOf("Species:");
+
+    // Find the index of the species name within the calculation result
+    final int speciesNameIndex = speciesLabelIndex + "Species:".length;
+
+    // Find the index of the next line break after the species name
+    final int nextLineBreakIndex =
+        _calculationResult.indexOf("\n", speciesNameIndex);
+
+    // Extract the species information
+    final String species = _calculationResult
+        .substring(speciesNameIndex, nextLineBreakIndex)
+        .trim();
+
+    // Get the icon path for the species
+    final String? speciesIconPath = getSpeciesIconPath(species);
+
+    // Extract the medication name
+    final String medicationName = _calculationResult.substring(
+      medicationNameIndex,
+      medicationNameIndex + widget.medication['name'].toString().length,
+    );
+    // Capitalize the first letter of the medication name
+    final String capitalizedMedicationName =
+        medicationName[0].toUpperCase() + medicationName.substring(1);
+
     return CupertinoPopupSurface(
       isSurfacePainted: true,
       child: Padding(
@@ -308,17 +736,48 @@ class _MedicationDetailsScreenState extends State<MedicationDetailsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              'Calculation Result:',
-              style: const TextStyle(
-                fontSize: 18.0,
-                fontWeight: FontWeight.bold,
+            // Display the species icon and name at the top and center it
+            Center(
+              child: Column(
+                children: [
+                  if (speciesIconPath != null)
+                    Image.asset(
+                      speciesIconPath,
+                      width: 40, // Adjust the width as needed
+                      height: 40, // Adjust the height as needed
+                    ),
+                  Text(
+                    species,
+                    style: const TextStyle(
+                      fontSize: 14.0,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 16.0),
-            Text(
-              _calculationResult ?? 'No results yet',
-              style: const TextStyle(fontSize: 16.0),
+            const SizedBox(height: 8.0),
+            // Center the medication name and display the first alphabet as capital
+            Center(
+              child: Text(
+                capitalizedMedicationName,
+                style: const TextStyle(
+                  fontSize: 22.0,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8.0),
+            RichText(
+              text: TextSpan(
+                style: const TextStyle(
+                    fontSize: 16.0, color: CupertinoColors.black),
+                children: [
+                  TextSpan(
+                    text: _calculationResult.substring(nextLineBreakIndex),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -516,7 +975,7 @@ class _MedicationDetailsScreenState extends State<MedicationDetailsScreen> {
     'Dogs': 'dalmatian.png',
     'Cats': 'cat.png',
     'Cattle': 'cow.png',
-    'Sheep/Goat': 'goat.png',
+    'Caprine': 'goat.png',
     'Horse': 'horse.png',
     'Rabbits': 'rabbit.png',
     'Avian': 'hen.png',

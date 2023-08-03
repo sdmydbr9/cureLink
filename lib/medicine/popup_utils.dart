@@ -8,11 +8,14 @@ import '../calculate/fetch.dart';
 
 class PopupCalculatorScreen extends StatefulWidget {
   final String medicationName;
-  final void Function(String) updateResultCard;
+  final void Function(String, String, String, int, int, List<dynamic>)
+      updateResultCard;
+  final void Function(String, String) onMedicationInfoChanged;
 
   PopupCalculatorScreen({
     required this.medicationName,
     required this.updateResultCard,
+    required this.onMedicationInfoChanged,
   });
 
   @override
@@ -23,23 +26,47 @@ class _PopupCalculatorScreenState extends State<PopupCalculatorScreen> {
   final TextEditingController speciesController = TextEditingController();
   final TextEditingController bodyWeightController = TextEditingController();
   bool _isLoading = false;
-  Map<String, dynamic> _calculationResult =
-      {}; // Added variable to store the calculation result
+  Map<String, dynamic> _calculationResult = {};
+
+  int _lowerDoseRate = 0; // Variable to store the lower dose rate
+  int _upperDoseRate = 0; // Variable to store the upper dose rate
+  List<dynamic> _medications =
+      []; // Variable to store the list of medications// Added variable to store the calculation result
 
   Future<Map<String, dynamic>> calculateMedication(
     String name,
     String species,
     double bodyWeight,
   ) async {
+    final encodedSpecies =
+        Uri.encodeComponent(species); // Encode the species part of the URL
     final apiUrl =
-        'https://www.pethealthwizard.tech:8000/calculate-medication/$name/$species/$bodyWeight';
+        'https://www.pethealthwizard.tech:8000/calculate-medication/$name/$encodedSpecies/$bodyWeight';
+
+    print('API URL: $apiUrl');
+
     final response = await http.get(Uri.parse(apiUrl));
+    print('API Response: ${response.body}');
+
     final data = jsonDecode(response.body);
 
-    // Parse 'dose_rate' values into integers
-    int lowerDoseRate = int.parse(data['dose_rate'][0]);
-    int upperDoseRate = int.parse(data['dose_rate'][1]);
-    data['dose_rate'] = [lowerDoseRate, upperDoseRate];
+    // Check if the 'dose_rate' is in range format [lower, upper]
+    if (data['dose_rate'] is List && data['dose_rate'].length == 2) {
+      // Parse 'dose_rate' values into integers
+      int lowerDoseRate = int.parse(data['dose_rate'][0]);
+      int upperDoseRate = int.parse(data['dose_rate'][1]);
+      data['dose_rate'] = [lowerDoseRate, upperDoseRate];
+    } else if (data['dose_rate'] is num) {
+      // Handle non-range dose_rate by converting it to a list with the same value for lower and upper dose rate
+      int singleDoseRate = data['dose_rate'].toInt();
+      data['dose_rate'] = [singleDoseRate, singleDoseRate];
+    } else {
+      // Handle other cases where dose_rate is not in the expected format
+      // You can show an error dialog or handle it as per your application's logic
+      throw Exception('Invalid dose_rate format in API response');
+    }
+
+    print('Calculated Dose Rate: ${data['dose_rate']}');
 
     return data;
   }
@@ -55,8 +82,14 @@ class _PopupCalculatorScreenState extends State<PopupCalculatorScreen> {
     });
 
     try {
+      print('Performing Medication Calculation...');
+      print('Medication Name: $medicationName');
+      print('Species: $species');
+      print('Body Weight: $bodyWeight');
+
       Map<String, dynamic> calculationResult =
           await calculateMedication(medicationName, species, bodyWeight);
+      print('Calculation Result: $calculationResult');
 
       if (calculationResult.containsKey('error')) {
         showCupertinoDialog(
@@ -84,7 +117,16 @@ class _PopupCalculatorScreenState extends State<PopupCalculatorScreen> {
               calculationResult; // Update the calculation result
         });
 
-        widget.updateResultCard(formattedResult);
+        widget.updateResultCard(
+          formattedResult,
+          medicationName,
+          species,
+          _lowerDoseRate,
+          _upperDoseRate,
+          _medications,
+        );
+
+        widget.onMedicationInfoChanged(medicationName, species);
 
         Navigator.of(context).pop();
       }

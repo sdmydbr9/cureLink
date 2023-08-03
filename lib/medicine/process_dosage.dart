@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' as http;
 
+import 'info_screen.dart';
+
 class ProcessDosageScreen extends StatelessWidget {
   final List<Map<String, dynamic>> dosageList;
   final List<Map<String, dynamic>> medicationList;
@@ -53,7 +55,8 @@ class _DosageMedicationScreenState extends State<DosageMedicationScreen> {
   Widget build(BuildContext context) {
     return CupertinoTheme(
       data: const CupertinoThemeData(
-          primaryColor: Color.fromARGB(255, 0, 64, 221)),
+        primaryColor: Color.fromARGB(255, 0, 64, 221),
+      ),
       child: Scaffold(
         appBar: CupertinoNavigationBar(
           middle: Column(
@@ -82,8 +85,7 @@ class _DosageMedicationScreenState extends State<DosageMedicationScreen> {
           backgroundColor: Colors.white,
         ),
         body: Padding(
-          padding:
-              const EdgeInsets.only(bottom: 16.0), // Add space below tab bar
+          padding: const EdgeInsets.only(bottom: 16.0),
           child: CupertinoTabScaffold(
             tabBar: CupertinoTabBar(
               items: const [
@@ -95,20 +97,22 @@ class _DosageMedicationScreenState extends State<DosageMedicationScreen> {
                   icon: Icon(CupertinoIcons.bandage),
                   label: 'Medication List',
                 ),
+                BottomNavigationBarItem(
+                  icon: Icon(CupertinoIcons.info),
+                  label: 'Info',
+                ),
               ],
             ),
-            backgroundColor: CupertinoColors
-                .lightBackgroundGray, // Set the background color here
+            backgroundColor: CupertinoColors.lightBackgroundGray,
             tabBuilder: (context, index) {
-              return CupertinoTabView(
-                builder: (context) {
-                  if (index == 0) {
-                    return _buildDosageList();
-                  } else {
-                    return _buildMedicationList();
-                  }
-                },
-              );
+              if (index == 0) {
+                return _buildDosageList();
+              } else if (index == 1) {
+                return _buildMedicationList();
+              } else {
+                // Navigate to the MedicineInfoScreen
+                return MedicineInfo();
+              }
             },
           ),
         ),
@@ -352,6 +356,13 @@ class _DosageMedicationScreenState extends State<DosageMedicationScreen> {
         _isLoading = false;
       });
     }
+  }
+
+  void _navigateToMedicineInfoScreen(BuildContext context) {
+    Navigator.push(
+      context,
+      CupertinoPageRoute(builder: (context) => MedicineInfo()),
+    );
   }
 
   void _showSaveSuccessDialog(BuildContext context) {

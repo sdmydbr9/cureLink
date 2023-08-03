@@ -49,7 +49,7 @@ class _ViewScreenState extends State<ViewScreen> {
   }
 
   Widget _cupertinoLoadingWidget() {
-    return Center(
+    return const Center(
       child: CupertinoActivityIndicator(),
     );
   }
@@ -62,13 +62,21 @@ class _ViewScreenState extends State<ViewScreen> {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final imageSize = 100.0; // Adjust the size for the image
+          final squareImageSize = imageSize * 0.75; // Use any ratio you prefer
 
           return Container(
-            width: imageSize,
-            height: imageSize,
+            width: squareImageSize, // Make the container width square
+            height: squareImageSize, // Make the container height square
             child: ClipRRect(
               borderRadius: BorderRadius.circular(8),
-              child: Image.network(imageUrl, fit: BoxFit.cover),
+              child: Image.network(
+                imageUrl,
+                fit: BoxFit.cover,
+                width:
+                    squareImageSize, // Ensure the image fits the square container
+                height:
+                    squareImageSize, // Ensure the image fits the square container
+              ),
             ),
           );
         },
@@ -121,29 +129,68 @@ class _ViewScreenState extends State<ViewScreen> {
                     detailsName.contains(searchText.toLowerCase());
 
                 if (!isMedicationNameMatch && !isDetailsNameMatch) {
-                  return SizedBox.shrink();
+                  return const SizedBox.shrink();
                 }
 
-                return Card(
-                  elevation: 4,
-                  margin: EdgeInsets.all(8.0),
-                  child: ListTile(
-                    leading: _decodeImage(
-                      medication['medication_details'][0]['image'],
-                      medication['medication_details'][0],
-                    ),
-                    title: Text(
-                      '${medication['name']}',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    subtitle: Text('${medication['category']}'),
-                    trailing: ElevatedButton(
-                      onPressed: () {
-                        _viewMedicationDetails(context, medication);
+                return Column(
+                  children: [
+                    GestureDetector(
+                      onTap: () {
+                        _showFullScreenImageDialog(
+                          medication['medication_details'][0],
+                        );
                       },
-                      child: Text('View'),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        child: Row(
+                          children: [
+                            _decodeImage(
+                              medication['medication_details'][0]['image'],
+                              medication['medication_details'][0],
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  DefaultTextStyle(
+                                    style: const TextStyle(
+                                      fontSize: 20,
+                                      color: CupertinoColors.black,
+                                      decoration: TextDecoration.none,
+                                    ),
+                                    child: Text(
+                                      '${medication['name']}',
+                                    ),
+                                  ),
+                                  DefaultTextStyle(
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.grey,
+                                      decoration: TextDecoration.none,
+                                    ),
+                                    child: Text(
+                                      '${medication['category']}',
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            ElevatedButton(
+                              onPressed: () {
+                                _viewMedicationDetails(context, medication);
+                              },
+                              child: const Text('View'),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
+                    const Divider(
+                      color: Colors.grey,
+                      thickness: 1.0,
+                    ),
+                  ],
                 );
               },
               childCount: medications.length,
@@ -173,7 +220,7 @@ class _ViewScreenState extends State<ViewScreen> {
             onPressed: () => Navigator.of(context).pop(),
             child: Text(
               '${details['type']} ${details['name']} ${details['presentation']} ${details['presentationUnit']}',
-              style: TextStyle(color: CupertinoColors.systemGrey2),
+              style: const TextStyle(color: CupertinoColors.systemGrey2),
             ),
           ),
         ],

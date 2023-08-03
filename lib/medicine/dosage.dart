@@ -49,7 +49,7 @@ class _MedicationFormScreenState extends State<MedicationFormScreen> {
     'Dogs',
     'Cats',
     'Cattle',
-    'Sheep/Goat',
+    'Caprine',
     'Horse',
     'Rabbits',
     'Avian',
