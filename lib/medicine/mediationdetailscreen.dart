@@ -43,6 +43,28 @@ class _MedicationDetailsScreenState extends State<MedicationDetailsScreen> {
     }
   }
 
+  // Helper function to fetch additional information from the API
+  Future<Map<String, dynamic>> _fetchAdditionalInfo(
+      String medicationName) async {
+    final String apiUrl =
+        'https://pethealthwizard.tech:8082/get_info_by_name?name=$medicationName';
+
+    print(
+        'API URL for Additional Info: $apiUrl'); // Debug message to print the API URL before making the request
+
+    final response = await http.get(Uri.parse(apiUrl));
+
+    print(
+        'Response Body: ${response.body}'); // Debug message to print the response body
+
+    if (response.statusCode == 200) {
+      final responseData = jsonDecode(response.body);
+      return responseData;
+    } else {
+      throw Exception('Failed to fetch additional information');
+    }
+  }
+
   Future<List<String>> fetchRecommendedFor(String medicationName) async {
     String url =
         'https://pethealthwizard.tech:8082/get_info_by_name?name=$medicationName';
@@ -72,10 +94,10 @@ class _MedicationDetailsScreenState extends State<MedicationDetailsScreen> {
   @override
   void initState() {
     super.initState();
-    _medicationInfoFuture =
-        fetchMedicationInfo(widget.medication['name'].toString());
-    _recommendedForFuture =
-        fetchRecommendedFor(widget.medication['name'].toString());
+    String medicationName = widget.medication['name'].toString();
+    print('Medication Name: $medicationName');
+    _medicationInfoFuture = fetchMedicationInfo(medicationName);
+    _recommendedForFuture = fetchRecommendedFor(medicationName);
   }
 
   Future<Map<String, dynamic>> fetchMedicationInfo(
@@ -564,7 +586,7 @@ class _MedicationDetailsScreenState extends State<MedicationDetailsScreen> {
 
   void _showPopup(String? data, String title) {
     bool showMoreInfo = false;
-    final double minHeight = 200.0; // The initial height of the popup
+    final double minHeight = 256.0; // The initial height of the popup
     double currentHeight = minHeight;
 
     showCupertinoModalPopup(
@@ -574,7 +596,6 @@ class _MedicationDetailsScreenState extends State<MedicationDetailsScreen> {
           builder: (BuildContext context, StateSetter setState) {
             return GestureDetector(
               onVerticalDragUpdate: (details) {
-                // Detect vertical drag and update the showMoreInfo state accordingly
                 setState(() {
                   showMoreInfo =
                       details.delta.dy < 0; // Check if the drag is upwards
@@ -585,44 +606,79 @@ class _MedicationDetailsScreenState extends State<MedicationDetailsScreen> {
                 duration: const Duration(
                     milliseconds: 300), // Animation duration in milliseconds
                 height: currentHeight,
-                child: CupertinoPopupSurface(
-                  isSurfacePainted: true,
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: DefaultTextStyle(
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: CupertinoColors.black,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment
-                            .center, // Align children in the center
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // Display the content here
-                          // ...
-                          Text(
-                            data ?? 'No data available',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              color:
-                                  Colors.black, // Use your preferred text color
-                              fontWeight: FontWeight
-                                  .normal, // Use your preferred font weight
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      height: 56.0, // Fixed height for the top bar
+                      color: CupertinoColors.systemBackground,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Details',
+                              style: CupertinoTheme.of(context)
+                                  .textTheme
+                                  .navTitleTextStyle
+                                  .copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: CupertinoColors.black,
+                                  ),
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          CupertinoButton(
-                            onPressed: () {
-                              Navigator.pop(
-                                  context); // Close the popup when "Close" button is pressed
-                            },
-                            child: const Text('Close'),
-                          ),
-                        ],
+                            IconButton(
+                              onPressed: () {
+                                Navigator.pop(context);
+                              },
+                              icon: Icon(CupertinoIcons.clear),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
+                    Expanded(
+                      child: CupertinoPopupSurface(
+                        isSurfacePainted: true,
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: DefaultTextStyle(
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: CupertinoColors.black,
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                // Display the content here
+                                // ...
+                                Text(
+                                  data ?? 'No data available',
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    color: Colors
+                                        .black, // Use your preferred text color
+                                    fontWeight: FontWeight
+                                        .normal, // Use your preferred font weight
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                CupertinoButton(
+                                  onPressed: () {
+                                    Navigator.pop(
+                                        context); // Close the popup when "Close" button is pressed
+                                  },
+                                  child: const Text('Close'),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             );
@@ -863,15 +919,16 @@ class _MedicationDetailsScreenState extends State<MedicationDetailsScreen> {
     );
   }
 
-  void _showDosageDialog(Map<String, dynamic> dosage) {
+  void _showDosageDialog(Map<String, dynamic> dosage) async {
     final String species = dosage['species'];
-    final String iconFileName = speciesIconMap[species] ??
-        'default.png'; // Get the icon filename for the species
+    final String iconFileName = speciesIconMap[species] ?? 'default.png';
 
     bool showMoreInfo = false;
-
-    final double minHeight = 200.0; // The initial height of the popup
+    final double minHeight = 250.0;
     double currentHeight = minHeight;
+
+    // Cached additional information
+    Map<String, dynamic>? cachedAdditionalInfo;
 
     showCupertinoModalPopup(
       context: context,
@@ -880,87 +937,201 @@ class _MedicationDetailsScreenState extends State<MedicationDetailsScreen> {
           builder: (BuildContext context, StateSetter setState) {
             return GestureDetector(
               onVerticalDragUpdate: (details) {
-                // Detect vertical drag and update the showMoreInfo state accordingly
                 setState(() {
-                  showMoreInfo =
-                      details.delta.dy < 0; // Check if the drag is upwards
-                  currentHeight = showMoreInfo ? 400.0 : minHeight;
+                  if (!showMoreInfo) {
+                    showMoreInfo = details.delta.dy < 0;
+                    currentHeight = showMoreInfo
+                        ? MediaQuery.of(context).size.height
+                        : minHeight;
+                  }
                 });
               },
               child: AnimatedContainer(
-                duration: const Duration(
-                    milliseconds: 300), // Animation duration in milliseconds
+                duration: const Duration(milliseconds: 300),
                 height: currentHeight,
                 child: CupertinoPopupSurface(
                   isSurfacePainted: true,
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: DefaultTextStyle(
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: CupertinoColors.black,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment
+                        .stretch, // Stretch the top bar to full width
+                    children: [
+                      // Non-scrollable "Details" heading
+                      GestureDetector(
+                        // Vertical drag to open and close the pop-up
+                        onVerticalDragUpdate: (details) {
+                          setState(() {
+                            if (!showMoreInfo) {
+                              showMoreInfo = true;
+                              currentHeight =
+                                  MediaQuery.of(context).size.height;
+                            } else {
+                              showMoreInfo = false;
+                              currentHeight = minHeight;
+                            }
+                          });
+                        },
+                        child: Container(
+                          color: CupertinoColors.systemBackground,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16.0,
+                              vertical: 2.0), // Adjust padding here
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Details',
+                                style: CupertinoTheme.of(context)
+                                    .textTheme
+                                    .navTitleTextStyle
+                                    .copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: CupertinoColors.black,
+                                    ),
+                              ),
+                              IconButton(
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                },
+                                icon: Icon(CupertinoIcons.clear),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment
-                            .center, // Align children in the center
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // Display the icon and species in the center
-                          Align(
-                            alignment: Alignment.topCenter,
-                            child: Column(
-                              children: [
-                                Image.asset(
-                                  'assets/icons/$iconFileName',
-                                  width: 48,
-                                  height: 48,
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  '${dosage['species']}',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
+                      const Divider(height: 1), // Divider
+                      Expanded(
+                        child: SingleChildScrollView(
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: DefaultTextStyle(
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: CupertinoColors.black,
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Align(
+                                    alignment: Alignment.topCenter,
+                                    child: Column(
+                                      children: [
+                                        Image.asset(
+                                          'assets/icons/$iconFileName',
+                                          width: 48,
+                                          height: 48,
+                                        ),
+                                        const SizedBox(height: 8),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                              ],
+                                  Text(
+                                    '${dosage['species']}',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Dosage: ${dosage['dosage']} ${dosage['unit']} / ${dosage['bodyWeight']} ${dosage['weightUnit']}',
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Route: ${dosage['route']}',
+                                  ),
+                                  const SizedBox(height: 8),
+                                  if (showMoreInfo)
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        const SizedBox(height: 8),
+                                        // Use cached data if available
+                                        if (cachedAdditionalInfo != null)
+                                          Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                  'MOA: ${cachedAdditionalInfo!['mechanismOfAction']}'),
+                                              const SizedBox(height: 8),
+                                              Text(
+                                                  'Contraindication: ${cachedAdditionalInfo!['contraindication']}'),
+                                              const SizedBox(height: 8),
+                                              Text(
+                                                  'Indication: ${cachedAdditionalInfo!['indication']}'),
+                                              const SizedBox(height: 8),
+                                              Text(
+                                                  'Common Side Effect: ${cachedAdditionalInfo!['commonSideEffects']}'),
+                                              const SizedBox(height: 8),
+                                              Text(
+                                                  'More Info: ${cachedAdditionalInfo!['moreInfo']}'),
+                                              const SizedBox(height: 8),
+                                            ],
+                                          )
+                                        else
+                                          FutureBuilder(
+                                            future: _fetchAdditionalInfo(widget
+                                                .medication['name']
+                                                .toString()),
+                                            builder: (context, snapshot) {
+                                              if (snapshot.connectionState ==
+                                                  ConnectionState.waiting) {
+                                                return CupertinoActivityIndicator(); // Replace with Cupertino loading indicator
+                                              } else if (snapshot.hasError) {
+                                                return const Text(
+                                                    'Failed to fetch additional information');
+                                              } else {
+                                                final responseData =
+                                                    snapshot.data;
+                                                cachedAdditionalInfo =
+                                                    responseData; // Cache fetched data
+
+                                                return Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                        'MOA: ${responseData!['mechanismOfAction']}'),
+                                                    const SizedBox(height: 8),
+                                                    Text(
+                                                        'Contraindication: ${responseData['contraindication']}'),
+                                                    const SizedBox(height: 8),
+                                                    Text(
+                                                        'Indication: ${responseData['indication']}'),
+                                                    const SizedBox(height: 8),
+                                                    Text(
+                                                        'Common Side Effect: ${responseData['commonSideEffects']}'),
+                                                    const SizedBox(height: 8),
+                                                    Text(
+                                                        'More Info: ${responseData['moreInfo']}'),
+                                                    const SizedBox(height: 8),
+                                                  ],
+                                                );
+                                              }
+                                            },
+                                          ),
+                                      ],
+                                    ),
+                                  if (!showMoreInfo)
+                                    CupertinoButton(
+                                      onPressed: () {
+                                        setState(() {
+                                          showMoreInfo = true;
+                                          currentHeight = MediaQuery.of(context)
+                                              .size
+                                              .height;
+                                        });
+                                      },
+                                      child: const Text('More'),
+                                    ),
+                                ],
+                              ),
                             ),
                           ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Dosage: ${dosage['dosage']} ${dosage['unit']} / ${dosage['bodyWeight']} ${dosage['weightUnit']}',
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Route: ${dosage['route']}',
-                          ),
-                          const SizedBox(height: 8),
-
-                          if (showMoreInfo)
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const SizedBox(height: 8),
-                                const Text('MOA: Placeholder'),
-                                const SizedBox(height: 8),
-                                const Text('Contraindication: Placeholder'),
-                                const SizedBox(height: 8),
-                                const Text('Indication: Placeholder'),
-                                const SizedBox(height: 8),
-                                const Text('Common Side Effect: Placeholder'),
-                                const SizedBox(height: 8),
-                              ],
-                            ),
-
-                          CupertinoButton(
-                            onPressed: () {
-                              Navigator.pop(
-                                  context); // Close the popup when "Info" button is pressed
-                            },
-                            child: const Text('Close'),
-                          ),
-                        ],
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 ),
               ),
