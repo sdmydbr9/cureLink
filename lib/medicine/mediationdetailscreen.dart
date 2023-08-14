@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -8,7 +9,7 @@ import 'popup_utils.dart';
 class MedicationDetailsScreen extends StatefulWidget {
   final dynamic medication;
 
-  MedicationDetailsScreen({required this.medication});
+  const MedicationDetailsScreen({super.key, required this.medication});
 
   @override
   _MedicationDetailsScreenState createState() =>
@@ -17,14 +18,10 @@ class MedicationDetailsScreen extends StatefulWidget {
 
 class _MedicationDetailsScreenState extends State<MedicationDetailsScreen> {
   bool _isScrolledDown = false; // Initialize the scroll state
-  int _lowerDoseRate = 0;
-  int _upperDoseRate = 0;
-  List<dynamic> _medications = [];
   Future<Map<String, dynamic>>? _medicationInfoFuture;
   Future<List<String>>? _recommendedForFuture;
 
   String _calculationResult = '';
-  TextEditingController _resultController = TextEditingController();
 
   // Listen to the scroll position and update the _isScrolledDown variable accordingly
   void _handleScroll(ScrollNotification notification) {
@@ -49,13 +46,15 @@ class _MedicationDetailsScreenState extends State<MedicationDetailsScreen> {
     final String apiUrl =
         'https://pethealthwizard.tech:8082/get_info_by_name?name=$medicationName';
 
-    print(
-        'API URL for Additional Info: $apiUrl'); // Debug message to print the API URL before making the request
+    if (kDebugMode) {
+      print('API URL for Additional Info: $apiUrl');
+    } // Debug message to print the API URL before making the request
 
     final response = await http.get(Uri.parse(apiUrl));
 
-    print(
-        'Response Body: ${response.body}'); // Debug message to print the response body
+    if (kDebugMode) {
+      print('Response Body: ${response.body}');
+    } // Debug message to print the response body
 
     if (response.statusCode == 200) {
       final responseData = jsonDecode(response.body);
@@ -68,22 +67,34 @@ class _MedicationDetailsScreenState extends State<MedicationDetailsScreen> {
   Future<List<String>> fetchRecommendedFor(String medicationName) async {
     String url =
         'https://pethealthwizard.tech:8082/get_info_by_name?name=$medicationName';
-    print('API URL: $url');
+    if (kDebugMode) {
+      print('API URL: $url');
+    }
 
     final response = await http.get(Uri.parse(url));
-    print('API Response Status Code: ${response.statusCode}');
-    print('API Response Body: ${response.body}');
+    if (kDebugMode) {
+      print('API Response Status Code: ${response.statusCode}');
+    }
+    if (kDebugMode) {
+      print('API Response Body: ${response.body}');
+    }
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      print('Decoded JSON Data: $data');
+      if (kDebugMode) {
+        print('Decoded JSON Data: $data');
+      }
 
       final selectedSpecies = data['selectedSpecies'] as String;
-      print('Selected Species: $selectedSpecies');
+      if (kDebugMode) {
+        print('Selected Species: $selectedSpecies');
+      }
 
       final recommendedFor =
           selectedSpecies.split(',').map((s) => s.trim()).toList();
-      print('Recommended For List: $recommendedFor');
+      if (kDebugMode) {
+        print('Recommended For List: $recommendedFor');
+      }
 
       return recommendedFor;
     } else {
@@ -95,7 +106,9 @@ class _MedicationDetailsScreenState extends State<MedicationDetailsScreen> {
   void initState() {
     super.initState();
     String medicationName = widget.medication['name'].toString();
-    print('Medication Name: $medicationName');
+    if (kDebugMode) {
+      print('Medication Name: $medicationName');
+    }
     _medicationInfoFuture = fetchMedicationInfo(medicationName);
     _recommendedForFuture = fetchRecommendedFor(medicationName);
   }
@@ -120,20 +133,22 @@ class _MedicationDetailsScreenState extends State<MedicationDetailsScreen> {
     int upperDoseRate,
     List<dynamic> medications,
   ) {
-    print('Updating result card in MedicationDetailsScreen: $formattedResult');
+    if (kDebugMode) {
+      print(
+          'Updating result card in MedicationDetailsScreen: $formattedResult');
+    }
 
     // Set the calculation result to the local variable
     setState(() {
       _calculationResult = formattedResult;
-      _lowerDoseRate = lowerDoseRate;
-      _upperDoseRate = upperDoseRate;
-      _medications = medications;
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    print('Build method called in _MedicationDetailsScreenState.');
+    if (kDebugMode) {
+      print('Build method called in _MedicationDetailsScreenState.');
+    }
 
     return CupertinoApp(
       theme: const CupertinoThemeData(brightness: Brightness.light),
@@ -286,7 +301,9 @@ class _MedicationDetailsScreenState extends State<MedicationDetailsScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${medication['category'].toString().replaceFirst(medication['category'].toString()[0], medication['category'].toString()[0].toUpperCase())}',
+                    medication['category'].toString().replaceFirst(
+                        medication['category'].toString()[0],
+                        medication['category'].toString()[0].toUpperCase()),
                     style: const TextStyle(
                       fontSize: 16,
                       color: CupertinoColors.systemGrey3,
@@ -331,8 +348,10 @@ class _MedicationDetailsScreenState extends State<MedicationDetailsScreen> {
   }
 
   Widget _buildSecondarySection() {
-    String formattedCategory =
-        '${widget.medication['category'].toString().replaceFirst(widget.medication['category'].toString()[0], widget.medication['category'].toString()[0].toUpperCase())}';
+    String formattedCategory = widget.medication['category']
+        .toString()
+        .replaceFirst(widget.medication['category'].toString()[0],
+            widget.medication['category'].toString()[0].toUpperCase());
 
     return FutureBuilder<Map<String, dynamic>>(
       future: _medicationInfoFuture,
@@ -586,7 +605,7 @@ class _MedicationDetailsScreenState extends State<MedicationDetailsScreen> {
 
   void _showPopup(String? data, String title) {
     bool showMoreInfo = false;
-    final double minHeight = 256.0; // The initial height of the popup
+    const double minHeight = 256.0; // The initial height of the popup
     double currentHeight = minHeight;
 
     showCupertinoModalPopup(
@@ -632,7 +651,7 @@ class _MedicationDetailsScreenState extends State<MedicationDetailsScreen> {
                               onPressed: () {
                                 Navigator.pop(context);
                               },
-                              icon: Icon(CupertinoIcons.clear),
+                              icon: const Icon(CupertinoIcons.clear),
                             ),
                           ],
                         ),
@@ -848,14 +867,14 @@ class _MedicationDetailsScreenState extends State<MedicationDetailsScreen> {
     List<String>? imageUrls = [];
 
     // Extract image URLs from medication details
-    if (details != null && details.isNotEmpty) {
+    if (details.isNotEmpty) {
       imageUrls = details
           .map((detail) => detail['image'] ?? '')
           .cast<String>()
           .toList();
     }
 
-    final CarouselController _carouselController = CarouselController();
+    final CarouselController carouselController = CarouselController();
 
     return ListView(
       // Wrap ExpandedDosageCard with ListView
@@ -864,12 +883,12 @@ class _MedicationDetailsScreenState extends State<MedicationDetailsScreen> {
           const NeverScrollableScrollPhysics(), // Disable scrolling for the ListView
       children: [
         // Display the carousel with images
-        Container(
+        SizedBox(
           height: 500, // Fixed height for the container
           child: AspectRatio(
             aspectRatio: 9 / 16, // Portrait aspect ratio (9:16)
             child: CarouselSlider(
-              carouselController: _carouselController,
+              carouselController: carouselController,
               items: imageUrls.map((imageUrl) {
                 return Builder(
                   builder: (BuildContext context) {
@@ -924,7 +943,7 @@ class _MedicationDetailsScreenState extends State<MedicationDetailsScreen> {
     final String iconFileName = speciesIconMap[species] ?? 'default.png';
 
     bool showMoreInfo = false;
-    final double minHeight = 250.0;
+    const double minHeight = 250.0;
     double currentHeight = minHeight;
 
     // Cached additional information
@@ -992,7 +1011,7 @@ class _MedicationDetailsScreenState extends State<MedicationDetailsScreen> {
                                 onPressed: () {
                                   Navigator.pop(context);
                                 },
-                                icon: Icon(CupertinoIcons.clear),
+                                icon: const Icon(CupertinoIcons.clear),
                               ),
                             ],
                           ),
@@ -1077,7 +1096,7 @@ class _MedicationDetailsScreenState extends State<MedicationDetailsScreen> {
                                             builder: (context, snapshot) {
                                               if (snapshot.connectionState ==
                                                   ConnectionState.waiting) {
-                                                return CupertinoActivityIndicator(); // Replace with Cupertino loading indicator
+                                                return const CupertinoActivityIndicator(); // Replace with Cupertino loading indicator
                                               } else if (snapshot.hasError) {
                                                 return const Text(
                                                     'Failed to fetch additional information');
@@ -1290,15 +1309,5 @@ Widget _buildMedicationDetailsSection(dynamic medication) {
           ),
         ),
     ],
-  );
-}
-
-Widget _buildMedicationDetailsTile(Map<String, dynamic> details) {
-  return Container(
-    padding: const EdgeInsets.all(8),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [],
-    ),
   );
 }
